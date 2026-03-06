@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "python3" "Error: python3 is not installed on this system."
+trainer_init_workdir
+
+trainer_section "advanced python trainer"
+echo "This trainer focuses on advanced Python patterns."
+echo "Topics: lambda, decorators, closures, generators, and caching."
+echo "Tip: for multi-line logic, use python3 -c with exec('''...''')."
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: lambda key functions" \
+  "sort numbers by absolute value using lambda" \
+  "Run a command that prints [-3, 1, -7, 4] sorted by abs value" \
+  "[1, -3, 4, -7]" \
+  "Example: python3 -c \"nums=[...]; print(sorted(nums, key=lambda n: abs(n)))\""
+
+trainer_expect_contains \
+  "Lesson 2: decorators" \
+  "create a decorator that logs function calls" \
+  "Run a command that defines @trace, decorates mul, calls mul(3,4), and prints function name" \
+  "calling mul" \
+  "Use functools.wraps inside decorator and print(mul.__name__)."
+
+trainer_expect_contains \
+  "Lesson 3: closures + nonlocal" \
+  "build a closure-based counter with nonlocal state" \
+  "Run a command that defines make_counter(), calls returned function twice, and prints 2 on second call" \
+  "2" \
+  "Use nonlocal count inside inner function."
+
+trainer_expect_contains \
+  "Lesson 4: generators" \
+  "compute a value from a generator function" \
+  "Run a command that defines a squares(n) generator and prints sum(squares(5))" \
+  "30" \
+  "Use yield in a loop, then sum(...)"
+
+trainer_expect_contains \
+  "Lesson 5: memoization with lru_cache" \
+  "use @lru_cache on fibonacci and show cache hits" \
+  "Run a command that computes fib(10), then prints fib.cache_info().hits" \
+  "hits" \
+  "Call fib(10) twice so cache hits are visible."
+
+trainer_section "Reference answers"
+cat <<'EOF'
+1) python3 -c "nums=[-3,1,-7,4]; print(sorted(nums, key=lambda n: abs(n)))"
+2) python3 -c "import functools; exec('''def trace(fn):\n    @functools.wraps(fn)\n    def wrapper(*a, **k):\n        print(f\"calling {fn.__name__}\")\n        return fn(*a, **k)\n    return wrapper\n@trace\ndef mul(a,b):\n    return a*b\nprint(mul(3,4))\nprint(mul.__name__)''')"
+3) python3 -c "exec('''def make_counter():\n    count = 0\n    def inc():\n        nonlocal count\n        count += 1\n        return count\n    return inc\nc = make_counter()\nprint(c())\nprint(c())''')"
+4) python3 -c "exec('''def squares(n):\n    for i in range(n):\n        yield i * i\nprint(sum(squares(5)))''')"
+5) python3 -c "import functools; exec('''@functools.lru_cache(maxsize=None)\ndef fib(n):\n    if n < 2:\n        return n\n    return fib(n-1) + fib(n-2)\nprint(fib(10))\nprint(fib(10))\nprint(fib.cache_info())''')"
+EOF
+
+trainer_finish \
+  "Nice work. You practiced advanced Python building blocks used in production code." \
+  "Re-run the trainer to improve your score."

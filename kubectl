@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "kubectl" "Error: kubectl is not installed on this system."
+trainer_init_workdir
+
+cat >"$TRAINER_WORKDIR/deploy.yaml" <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: web
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+EOF
+
+trainer_section "kubectl trainer"
+echo "This trainer uses client-side commands only (no cluster required)."
+echo "Sample files are in: $TRAINER_WORKDIR"
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: generate yaml with dry-run" \
+  "create a pod manifest from CLI arguments" \
+  "Run a command that creates pod demo with image nginx using --dry-run=client -o yaml" \
+  "name: demo" \
+  "Use kubectl create pod ... --dry-run=client -o yaml."
+
+trainer_expect_contains \
+  "Lesson 2: inspect API docs" \
+  "show details for pod fields" \
+  "Run a command that explains pod.spec.containers and prints some output" \
+  "FIELDS" \
+  "Use kubectl explain pod.spec.containers."
+
+trainer_expect_contains \
+  "Lesson 3: local manifest mutation" \
+  "update image in local deployment yaml without applying" \
+  "Run a command that sets web container image to nginx:1.27 in deploy.yaml using --local -o yaml" \
+  "image: nginx:1.27" \
+  "Use kubectl set image -f ... --local -o yaml."
+
+trainer_expect_contains \
+  "Lesson 4: create configmap from literal" \
+  "build configmap output as YAML" \
+  "Run a command that creates configmap app-cfg with KEY=VALUE using dry-run yaml output" \
+  "name: app-cfg" \
+  "Use kubectl create configmap ... --from-literal ... --dry-run=client -o yaml."
+
+trainer_section "Reference answers"
+cat <<EOF
+1) kubectl create pod demo --image=nginx --dry-run=client -o yaml
+2) kubectl explain pod.spec.containers
+3) kubectl set image -f "$TRAINER_WORKDIR/deploy.yaml" web=nginx:1.27 --local -o yaml
+4) kubectl create configmap app-cfg --from-literal=KEY=VALUE --dry-run=client -o yaml
+EOF
+
+trainer_finish \
+  "Nice work. You practiced high-value kubectl authoring and inspection commands." \
+  "Re-run the trainer to improve your score."

@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "rg" "Error: ripgrep (rg) is not installed on this system."
+trainer_init_workdir
+
+cat >"$TRAINER_WORKDIR/app.log" <<'EOF'
+INFO connected
+WARN retrying
+ERROR timeout
+info fallback path
+ERROR auth failed
+EOF
+
+cat >"$TRAINER_WORKDIR/users.csv" <<'EOF'
+id,name,role
+1,Ada,admin
+2,Lin,user
+3,Sam,admin
+4,Mia,user
+EOF
+
+cat >"$TRAINER_WORKDIR/notes.md" <<'EOF'
+# release notes
+- fix auth timeout
+- add tests
+EOF
+
+trainer_section "ripgrep trainer"
+echo "You will run rg commands and verify output."
+echo "Sample files are in: $TRAINER_WORKDIR"
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: basic search" \
+  "find lines containing ERROR" \
+  "Run a command that prints ERROR lines from $TRAINER_WORKDIR/app.log" \
+  "ERROR timeout" \
+  "Use: rg 'ERROR' <file>"
+
+trainer_expect_contains \
+  "Lesson 2: ignore case" \
+  "match INFO and info lines together" \
+  "Run a command that finds info case-insensitively in $TRAINER_WORKDIR/app.log" \
+  "info fallback path" \
+  "Use rg -i 'info' <file>."
+
+trainer_expect_contains \
+  "Lesson 3: line numbers" \
+  "show admin rows with line numbers" \
+  "Run a command that finds 'admin' in $TRAINER_WORKDIR/users.csv with line numbers" \
+  "2:1,Ada,admin" \
+  "Use rg -n 'admin' <file>."
+
+trainer_expect_contains \
+  "Lesson 4: list matching files" \
+  "show only file names that contain timeout" \
+  "Run a command that searches timeout under $TRAINER_WORKDIR and prints only matching file names" \
+  "app.log" \
+  "Use rg -l 'timeout' <dir>."
+
+trainer_section "Reference answers"
+cat <<EOF
+1) rg 'ERROR' "$TRAINER_WORKDIR/app.log"
+2) rg -i 'info' "$TRAINER_WORKDIR/app.log"
+3) rg -n 'admin' "$TRAINER_WORKDIR/users.csv"
+4) rg -l 'timeout' "$TRAINER_WORKDIR"
+EOF
+
+trainer_finish \
+  "Nice work. You covered ripgrep basics: fast search, -i, -n, and -l." \
+  "Re-run the trainer to improve your score."

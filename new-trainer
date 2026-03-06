@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+  echo "Usage: ./trainers/new-trainer <tool-name>"
+  exit 1
+fi
+
+name="$1"
+
+if [[ ! "$name" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+  echo "Error: tool name must match ^[a-z0-9][a-z0-9-]*$"
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+target="$SCRIPT_DIR/$name"
+
+if [[ -e "$target" ]]; then
+  echo "Error: trainer already exists at $target"
+  exit 1
+fi
+
+cat >"$target" <<EOF
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "\$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "$name" "Error: $name is not installed on this system."
+trainer_init_workdir
+
+cat >"\$TRAINER_WORKDIR/sample.txt" <<'DATA'
+alpha
+beta
+gamma
+DATA
+
+trainer_section "$name trainer"
+echo "Sample files are in: \$TRAINER_WORKDIR"
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: starter" \
+  "replace with your lesson goal" \
+  "run a command against \$TRAINER_WORKDIR/sample.txt" \
+  "replace-expected-output" \
+  "replace with a hint"
+
+trainer_section "Reference answers"
+cat <<ANSWERS
+1) replace with a valid command
+ANSWERS
+
+trainer_finish \
+  "Nice work. Replace this message with tool-specific outcomes." \
+  "Re-run the trainer after updating this script."
+EOF
+
+chmod +x "$target"
+echo "Created trainer scaffold: $target"

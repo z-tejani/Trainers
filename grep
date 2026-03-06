@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "grep" "Error: grep is not installed on this system."
+trainer_init_workdir
+
+cat >"$TRAINER_WORKDIR/log.txt" <<'EOF'
+INFO: service started
+WARN: low memory
+ERROR: timeout while contacting db
+info: retrying
+ERROR: permission denied
+EOF
+
+cat >"$TRAINER_WORKDIR/users.csv" <<'EOF'
+id,name,role
+1,Ada,admin
+2,Lin,user
+3,Sam,admin
+4,Mia,user
+EOF
+
+trainer_section "grep trainer"
+echo "You will run commands and check what they print."
+echo "Sample files are in: $TRAINER_WORKDIR"
+echo "Try opening another terminal if you want to inspect files directly."
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: basic match" \
+  "show lines with ERROR from log.txt" \
+  "Run a command that prints both ERROR lines from $TRAINER_WORKDIR/log.txt" \
+  "ERROR: timeout while contacting db"
+
+trainer_expect_contains \
+  "Lesson 2: case-insensitive search" \
+  "match both INFO and info lines" \
+  "Run a command that finds 'info' regardless of case in $TRAINER_WORKDIR/log.txt" \
+  "info: retrying"
+
+trainer_expect_contains \
+  "Lesson 3: show line numbers" \
+  "print admin rows with line numbers in users.csv" \
+  "Run a command that finds admin in $TRAINER_WORKDIR/users.csv with line numbers" \
+  "2:1,Ada,admin"
+
+trainer_expect_contains \
+  "Lesson 4: invert match" \
+  "show rows that are NOT users in users.csv" \
+  "Run a command that excludes lines containing ',user'" \
+  "3,Sam,admin"
+
+trainer_section "Reference answers"
+cat <<EOF
+1) grep 'ERROR' "$TRAINER_WORKDIR/log.txt"
+2) grep -i 'info' "$TRAINER_WORKDIR/log.txt"
+3) grep -n 'admin' "$TRAINER_WORKDIR/users.csv"
+4) grep -v ',user' "$TRAINER_WORKDIR/users.csv"
+EOF
+
+trainer_finish \
+  "Nice work. You covered the core grep flags: -i, -n, -v." \
+  "Re-run the trainer to improve your score."

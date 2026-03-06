@@ -1,0 +1,747 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "go" "Error: go is not installed on this system."
+trainer_require_cmd "gofmt" "Error: gofmt is not installed on this system."
+trainer_init_workdir
+
+# Keep Go caches inside the temp workspace so sandbox permissions do not block runs.
+export GOCACHE="$TRAINER_WORKDIR/.gocache"
+export GOMODCACHE="$TRAINER_WORKDIR/.gomodcache"
+mkdir -p "$GOCACHE" "$GOMODCACHE"
+
+cat >"$TRAINER_WORKDIR/go_keywords.txt" <<'KEYWORDS'
+break
+default
+func
+interface
+select
+case
+defer
+go
+map
+struct
+chan
+else
+goto
+package
+switch
+const
+fallthrough
+if
+range
+type
+continue
+for
+import
+return
+var
+KEYWORDS
+
+cat >"$TRAINER_WORKDIR/go_terms_32.txt" <<'TERMS'
+break
+default
+func
+interface
+select
+case
+defer
+go
+map
+struct
+chan
+else
+goto
+package
+switch
+const
+fallthrough
+if
+range
+type
+continue
+for
+import
+return
+var
+append
+cap
+copy
+delete
+len
+make
+new
+TERMS
+
+cat >"$TRAINER_WORKDIR/module_notes.txt" <<'NOTES'
+Semantic import versioning example:
+- module github.com/acme/widgets/v2
+- importing a major version >=2 uses /vN suffix in module path.
+NOTES
+
+mkdir -p \
+  "$TRAINER_WORKDIR/keywords" \
+  "$TRAINER_WORKDIR/builtins" \
+  "$TRAINER_WORKDIR/calc" \
+  "$TRAINER_WORKDIR/errorsdemo" \
+  "$TRAINER_WORKDIR/contextdemo" \
+  "$TRAINER_WORKDIR/compose" \
+  "$TRAINER_WORKDIR/counter" \
+  "$TRAINER_WORKDIR/generics" \
+  "$TRAINER_WORKDIR/jsonio" \
+  "$TRAINER_WORKDIR/format"
+
+cat >"$TRAINER_WORKDIR/go.mod" <<'GOMOD'
+module trainerdemo
+
+go 1.22
+GOMOD
+
+cat >"$TRAINER_WORKDIR/keywords/main.go" <<'KWDEMO'
+package main
+
+import "fmt"
+
+const demoConst = "const"
+
+var demoVar = map[string]int{"go": 1}
+
+type speaker interface {
+	Speak() string
+}
+
+type robot struct {
+	name string
+}
+
+func (r robot) Speak() string {
+	return "hi " + r.name
+}
+
+func choose(n int) string {
+	switch {
+	case n < 0:
+		return "neg"
+	case n == 0:
+		fallthrough
+	default:
+		return "non-neg"
+	}
+}
+
+func channelDemo() int {
+	ch := make(chan int, 1)
+	go func() {
+		defer close(ch)
+		ch <- 7
+	}()
+
+	var out int
+	select {
+	case out = <-ch:
+	}
+	return out
+}
+
+func loopDemo() int {
+	nums := []int{1, 2, 3}
+	sum := 0
+	for i, v := range nums {
+		if i == 1 {
+			continue
+		} else if v < 0 {
+			goto end
+		}
+		sum += v
+		if sum > 10 {
+			break
+		}
+	}
+
+end:
+	return sum
+}
+
+func typeDemo(x interface{}) string {
+	switch x.(type) {
+	case int:
+		return "int"
+	default:
+		return "other"
+	}
+}
+
+func main() {
+	s := speaker(robot{name: "gopher"})
+	fmt.Println("const:", demoConst)
+	fmt.Println("speak:", s.Speak())
+	fmt.Println("choose:", choose(0))
+	fmt.Println("loop:", loopDemo())
+	fmt.Println("type:", typeDemo(3))
+	fmt.Println("select-recv:", channelDemo())
+
+	_, ok := demoVar["go"]
+	if !ok {
+		return
+	}
+
+	fmt.Println("ALL_GO_KEYWORDS_OK")
+}
+KWDEMO
+
+cat >"$TRAINER_WORKDIR/builtins/main.go" <<'BUILTINS'
+package main
+
+import "fmt"
+
+func main() {
+	arr := make([]int, 0, 4)
+	arr = append(arr, 1, 2)
+
+	n := len(arr)
+	c := cap(arr)
+
+	dup := new([]int)
+	*dup = make([]int, len(arr))
+	copy(*dup, arr)
+
+	m := map[string]int{"x": 1}
+	delete(m, "x")
+
+	fmt.Printf("len=%d cap=%d second=%d deleted=%d\n", n, c, (*dup)[1], m["x"])
+	fmt.Println("CORE_BUILTINS_OK")
+}
+BUILTINS
+
+cat >"$TRAINER_WORKDIR/calc/calc.go" <<'CALC'
+package calc
+
+func Fib(n int) int {
+	if n < 2 {
+		return n
+	}
+	a, b := 0, 1
+	for i := 2; i <= n; i++ {
+		a, b = b, a+b
+	}
+	return b
+}
+
+func FibRec(n int) int {
+	if n < 2 {
+		return n
+	}
+	return FibRec(n-1) + FibRec(n-2)
+}
+
+func Sum(nums []int) int {
+	total := 0
+	for _, n := range nums {
+		total += n
+	}
+	return total
+}
+CALC
+
+cat >"$TRAINER_WORKDIR/calc/calc_test.go" <<'CALCTEST'
+package calc
+
+import "testing"
+
+func TestFibTable(t *testing.T) {
+	cases := []struct {
+		n    int
+		want int
+	}{
+		{0, 0},
+		{1, 1},
+		{2, 1},
+		{10, 55},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run("fib", func(t *testing.T) {
+			if got := Fib(tc.n); got != tc.want {
+				t.Fatalf("Fib(%d)=%d, want %d", tc.n, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSum(t *testing.T) {
+	if got := Sum([]int{3, 4, 5}); got != 12 {
+		t.Fatalf("Sum mismatch: got %d", got)
+	}
+}
+CALCTEST
+
+cat >"$TRAINER_WORKDIR/calc/bench_test.go" <<'BENCH'
+package calc
+
+import "testing"
+
+func BenchmarkFibIter(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = Fib(20)
+	}
+}
+
+func BenchmarkFibRec(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = FibRec(20)
+	}
+}
+BENCH
+
+cat >"$TRAINER_WORKDIR/errorsdemo/main.go" <<'ERRDEMO'
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+var ErrNotFound = errors.New("not found")
+
+type ParseError struct {
+	Field string
+}
+
+func (e *ParseError) Error() string {
+	return "invalid field: " + e.Field
+}
+
+func wrapErr() error {
+	return fmt.Errorf("lookup user: %w", ErrNotFound)
+}
+
+func typedErr() error {
+	return &ParseError{Field: "email"}
+}
+
+func main() {
+	err1 := wrapErr()
+	fmt.Println("is-not-found:", errors.Is(err1, ErrNotFound))
+
+	err2 := typedErr()
+	var pe *ParseError
+	fmt.Println("as-parse-error:", errors.As(err2, &pe))
+}
+ERRDEMO
+
+cat >"$TRAINER_WORKDIR/contextdemo/main.go" <<'CTXDEMO'
+package main
+
+import (
+	"context"
+	"fmt"
+	"time"
+)
+
+func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	workDone := make(chan struct{})
+	go func() {
+		defer close(workDone)
+		select {
+		case <-time.After(50 * time.Millisecond):
+		case <-ctx.Done():
+		}
+	}()
+
+	<-ctx.Done()
+	<-workDone
+	fmt.Println(ctx.Err())
+}
+CTXDEMO
+
+cat >"$TRAINER_WORKDIR/compose/compose.go" <<'COMPOSE'
+package compose
+
+type Runner interface {
+	Run() string
+}
+
+type Engine struct{}
+
+func (e *Engine) Run() string {
+	return "running"
+}
+
+type Car struct {
+	*Engine
+	Name string
+}
+
+func NewCar(name string) Car {
+	return Car{Engine: &Engine{}, Name: name}
+}
+
+func UseRunner(r Runner) string {
+	return r.Run()
+}
+COMPOSE
+
+cat >"$TRAINER_WORKDIR/compose/compose_test.go" <<'COMPOSETEST'
+package compose
+
+import "testing"
+
+func TestCompositionAndInterface(t *testing.T) {
+	car := NewCar("bolt")
+	if got := UseRunner(&car); got != "running" {
+		t.Fatalf("unexpected output: %s", got)
+	}
+}
+COMPOSETEST
+
+cat >"$TRAINER_WORKDIR/counter/counter.go" <<'COUNTER'
+package counter
+
+import "sync"
+
+type SafeCounter struct {
+	mu sync.Mutex
+	n  int
+}
+
+func (c *SafeCounter) Inc() {
+	c.mu.Lock()
+	c.n++
+	c.mu.Unlock()
+}
+
+func (c *SafeCounter) Value() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.n
+}
+
+func SumViaChannel(nums []int) int {
+	in := make(chan int)
+	done := make(chan int)
+	go func() {
+		total := 0
+		for n := range in {
+			total += n
+		}
+		done <- total
+	}()
+	for _, n := range nums {
+		in <- n
+	}
+	close(in)
+	return <-done
+}
+COUNTER
+
+cat >"$TRAINER_WORKDIR/counter/counter_test.go" <<'COUNTERTEST'
+package counter
+
+import (
+	"sync"
+	"testing"
+)
+
+func TestSafeCounterParallel(t *testing.T) {
+	var c SafeCounter
+	var wg sync.WaitGroup
+
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			c.Inc()
+		}()
+	}
+
+	wg.Wait()
+	if got := c.Value(); got != 100 {
+		t.Fatalf("counter=%d, want 100", got)
+	}
+}
+
+func TestSumViaChannel(t *testing.T) {
+	if got := SumViaChannel([]int{1, 2, 3, 4}); got != 10 {
+		t.Fatalf("sum=%d, want 10", got)
+	}
+}
+COUNTERTEST
+
+cat >"$TRAINER_WORKDIR/generics/generics.go" <<'GENERICS'
+package generics
+
+func Contains[T comparable](items []T, target T) bool {
+	for _, item := range items {
+		if item == target {
+			return true
+		}
+	}
+	return false
+}
+
+func Map[T any, U any](items []T, fn func(T) U) []U {
+	out := make([]U, 0, len(items))
+	for _, item := range items {
+		out = append(out, fn(item))
+	}
+	return out
+}
+GENERICS
+
+cat >"$TRAINER_WORKDIR/generics/generics_test.go" <<'GENERICSTEST'
+package generics
+
+import "testing"
+
+func TestContains(t *testing.T) {
+	if !Contains([]int{1, 2, 3}, 2) {
+		t.Fatal("expected target to be found")
+	}
+	if Contains([]string{"go", "rust"}, "zig") {
+		t.Fatal("expected target not to be found")
+	}
+}
+
+func TestMap(t *testing.T) {
+	got := Map([]int{2, 3, 4}, func(n int) int { return n * n })
+	if len(got) != 3 || got[2] != 16 {
+		t.Fatalf("unexpected map output: %#v", got)
+	}
+}
+GENERICSTEST
+
+cat >"$TRAINER_WORKDIR/jsonio/main.go" <<'JSONIO'
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
+type Person struct {
+	Name string `json:"name"`
+	Age  int    `json:"age,omitempty"`
+}
+
+func main() {
+	var p Person
+	dec := json.NewDecoder(strings.NewReader(`{"name":"Ada","age":0}`))
+	if err := dec.Decode(&p); err != nil {
+		panic(err)
+	}
+
+	enc, err := json.Marshal(p)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(enc))
+
+	scanner := bufio.NewScanner(strings.NewReader("one\ntwo\n"))
+	lines := 0
+	for scanner.Scan() {
+		lines++
+	}
+	fmt.Printf("lines=%d\n", lines)
+}
+JSONIO
+
+cat >"$TRAINER_WORKDIR/format/me.go" <<'FORMAT'
+package main
+func add(a int,b int)int{return a+b}
+FORMAT
+
+trainer_section "golang trainer"
+echo "Goal: cover Go keywords and practical programming workflow."
+echo "Workspace: $TRAINER_WORKDIR"
+echo "Official Go keywords: 25."
+echo "This trainer adds 7 core built-ins to cover your requested 32 terms."
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: keyword inventory" \
+  "count official Go reserved keywords" \
+  "Run a command that prints the line count of $TRAINER_WORKDIR/go_keywords.txt" \
+  "25" \
+  "Use wc -l."
+
+trainer_expect_contains \
+  "Lesson 2: extended 32-term inventory" \
+  "count the full 32 language terms list" \
+  "Run a command that prints the line count of $TRAINER_WORKDIR/go_terms_32.txt" \
+  "32" \
+  "Use wc -l."
+
+trainer_expect_contains \
+  "Lesson 3: verify specific keyword" \
+  "confirm fallthrough exists in the official keyword set" \
+  "Run a command that finds fallthrough in $TRAINER_WORKDIR/go_keywords.txt" \
+  "fallthrough" \
+  "Use grep."
+
+trainer_expect_contains \
+  "Lesson 4: all-keyword program" \
+  "execute code that uses every official Go keyword" \
+  "Run $TRAINER_WORKDIR/keywords/main.go" \
+  "ALL_GO_KEYWORDS_OK" \
+  "Use go run."
+
+trainer_expect_contains \
+  "Lesson 5: goroutines/channels/select" \
+  "verify concurrency output" \
+  "Run the same keyword demo and confirm the channel receive line" \
+  "select-recv: 7" \
+  "Use go run keywords/main.go."
+
+trainer_expect_contains \
+  "Lesson 6: built-ins programming demo" \
+  "run code that uses append/cap/copy/delete/len/make/new" \
+  "Run $TRAINER_WORKDIR/builtins/main.go" \
+  "CORE_BUILTINS_OK" \
+  "Use go run."
+
+trainer_expect_contains \
+  "Lesson 7: error wrapping and errors.Is" \
+  "verify wrapped sentinel errors" \
+  "Run $TRAINER_WORKDIR/errorsdemo/main.go" \
+  "is-not-found: true" \
+  "Use go run."
+
+trainer_expect_contains \
+  "Lesson 8: typed errors and errors.As" \
+  "verify typed error extraction" \
+  "Run $TRAINER_WORKDIR/errorsdemo/main.go" \
+  "as-parse-error: true" \
+  "Use go run."
+
+trainer_expect_contains \
+  "Lesson 9: context timeout/cancellation" \
+  "observe cancellation flow" \
+  "Run $TRAINER_WORKDIR/contextdemo/main.go" \
+  "context deadline exceeded" \
+  "Use go run."
+
+trainer_expect_contains \
+  "Lesson 10: interfaces and composition" \
+  "validate interface-based usage" \
+  "From $TRAINER_WORKDIR run tests for compose package" \
+  "ok" \
+  "Use: cd $TRAINER_WORKDIR && go test ./compose"
+
+trainer_expect_contains \
+  "Lesson 11: table-driven tests" \
+  "run the table-driven Fib test" \
+  "From $TRAINER_WORKDIR/calc run go test -run TestFibTable" \
+  "PASS" \
+  "Use go test -run TestFibTable."
+
+trainer_expect_contains \
+  "Lesson 12: full project tests" \
+  "run all package tests" \
+  "From $TRAINER_WORKDIR run go test ./..." \
+  "ok" \
+  "Use: cd $TRAINER_WORKDIR && go test ./..."
+
+trainer_expect_contains \
+  "Lesson 13: single named test" \
+  "target one test quickly" \
+  "From $TRAINER_WORKDIR/calc run go test -run TestSum" \
+  "PASS" \
+  "Use go test -run TestSum."
+
+trainer_expect_contains \
+  "Lesson 14: coverage" \
+  "measure statement coverage" \
+  "From $TRAINER_WORKDIR/calc run go test -cover" \
+  "coverage:" \
+  "Use go test -cover."
+
+trainer_expect_contains \
+  "Lesson 15: race detector" \
+  "run concurrency tests with race detection" \
+  "From $TRAINER_WORKDIR run go test -race ./counter" \
+  "ok" \
+  "Use: cd $TRAINER_WORKDIR && go test -race ./counter"
+
+trainer_expect_contains \
+  "Lesson 16: benchmarks with memory stats" \
+  "benchmark iterative vs recursive fib" \
+  "From $TRAINER_WORKDIR/calc run go test -run '^$' -bench Fib -benchmem" \
+  "BenchmarkFibIter" \
+  "Use bench + benchmem flags."
+
+trainer_expect_contains \
+  "Lesson 17: generics" \
+  "validate generic functions and constraints" \
+  "From $TRAINER_WORKDIR run go test ./generics" \
+  "ok" \
+  "Use: cd $TRAINER_WORKDIR && go test ./generics"
+
+trainer_expect_contains \
+  "Lesson 18: modules and semantic import versioning" \
+  "tidy module metadata and check /v2 example" \
+  "From $TRAINER_WORKDIR run go mod tidy, then go list -m all, then print matching /v2 line from module_notes.txt" \
+  "/v2" \
+  "Chain three commands with &&."
+
+trainer_expect_contains \
+  "Lesson 19: JSON + io.Reader pipeline" \
+  "decode/encode JSON and scan reader input" \
+  "Run $TRAINER_WORKDIR/jsonio/main.go" \
+  "lines=2" \
+  "Use go run."
+
+trainer_expect_contains \
+  "Lesson 20: quality gate" \
+  "run format, vet, tests, race, and coverage in one pass" \
+  "Format $TRAINER_WORKDIR/format/me.go, then from $TRAINER_WORKDIR run go vet ./..., go test ./calc -cover, and go test -race ./counter; finally print me.go" \
+  "func add(a int, b int) int {" \
+  "Use command chaining with && and finish with cat me.go."
+
+trainer_section "Coverage map: all 32 requested language terms"
+cat <<MAP
+Official keywords (25):
+break default func interface select case defer go map struct chan else goto package switch
+const fallthrough if range type continue for import return var
+
+Core built-ins included to reach 32 terms:
+append cap copy delete len make new
+MAP
+
+trainer_section "Reference answers"
+cat <<ANSWERS
+1) wc -l < "$TRAINER_WORKDIR/go_keywords.txt"
+2) wc -l < "$TRAINER_WORKDIR/go_terms_32.txt"
+3) grep '^fallthrough$' "$TRAINER_WORKDIR/go_keywords.txt"
+4) go run "$TRAINER_WORKDIR/keywords/main.go"
+5) go run "$TRAINER_WORKDIR/keywords/main.go"
+6) go run "$TRAINER_WORKDIR/builtins/main.go"
+7) go run "$TRAINER_WORKDIR/errorsdemo/main.go"
+8) go run "$TRAINER_WORKDIR/errorsdemo/main.go"
+9) go run "$TRAINER_WORKDIR/contextdemo/main.go"
+10) cd "$TRAINER_WORKDIR" && go test ./compose
+11) cd "$TRAINER_WORKDIR/calc" && go test -run TestFibTable
+12) cd "$TRAINER_WORKDIR" && go test ./...
+13) cd "$TRAINER_WORKDIR/calc" && go test -run TestSum
+14) cd "$TRAINER_WORKDIR/calc" && go test -cover
+15) cd "$TRAINER_WORKDIR" && go test -race ./counter
+16) cd "$TRAINER_WORKDIR/calc" && go test -run '^$' -bench Fib -benchmem
+17) cd "$TRAINER_WORKDIR" && go test ./generics
+18) cd "$TRAINER_WORKDIR" && go mod tidy && go list -m all && grep '/v2' "$TRAINER_WORKDIR/module_notes.txt"
+19) go run "$TRAINER_WORKDIR/jsonio/main.go"
+20) gofmt -w "$TRAINER_WORKDIR/format/me.go" && cd "$TRAINER_WORKDIR" && go vet ./... && go test ./calc -cover && go test -race ./counter && cat "$TRAINER_WORKDIR/format/me.go"
+ANSWERS
+
+trainer_finish \
+  "Nice work. You covered keywords, concurrency, tests, race checks, benchmarks, generics, modules, JSON/I/O, and quality gates." \
+  "Re-run the trainer and improve your score."

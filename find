@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "find" "Error: find is not installed on this system."
+trainer_init_workdir
+
+mkdir -p "$TRAINER_WORKDIR/project/src"
+mkdir -p "$TRAINER_WORKDIR/project/logs"
+mkdir -p "$TRAINER_WORKDIR/project/data/archive"
+
+cat >"$TRAINER_WORKDIR/project/README.md" <<'EOF'
+# Demo Project
+EOF
+
+cat >"$TRAINER_WORKDIR/project/src/main.py" <<'EOF'
+print("main")
+EOF
+
+cat >"$TRAINER_WORKDIR/project/src/util.py" <<'EOF'
+print("util")
+EOF
+
+cat >"$TRAINER_WORKDIR/project/logs/app.log" <<'EOF'
+app started
+EOF
+
+cat >"$TRAINER_WORKDIR/project/logs/error.log" <<'EOF'
+error happened
+EOF
+
+cat >"$TRAINER_WORKDIR/project/data/archive/report.txt" <<'EOF'
+monthly report
+EOF
+
+cat >"$TRAINER_WORKDIR/project/data/input.csv" <<'EOF'
+id,value
+1,foo
+EOF
+
+trainer_section "find trainer"
+echo "You will run find commands and verify output."
+echo "Sample files are in: $TRAINER_WORKDIR/project"
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: find by name" \
+  "locate .log files" \
+  "Run a command that finds all .log files under $TRAINER_WORKDIR/project" \
+  "error.log" \
+  "Use: find <path> -type f -name '*.log'"
+
+trainer_expect_contains \
+  "Lesson 2: directories only" \
+  "find the data directory" \
+  "Run a command that finds directories named data under $TRAINER_WORKDIR/project" \
+  "$TRAINER_WORKDIR/project/data" \
+  "Use -type d with -name data."
+
+trainer_expect_contains \
+  "Lesson 3: depth control" \
+  "show only top-level files in project/" \
+  "Run a command that lists files directly in $TRAINER_WORKDIR/project (not nested)" \
+  "README.md" \
+  "Use -maxdepth 1 -type f."
+
+trainer_expect_contains \
+  "Lesson 4: combine predicates" \
+  "find Python files in src/" \
+  "Run a command that finds .py files under $TRAINER_WORKDIR/project/src" \
+  "main.py" \
+  "Use -type f and -name '*.py'."
+
+trainer_section "Reference answers"
+cat <<EOF
+1) find "$TRAINER_WORKDIR/project" -type f -name '*.log'
+2) find "$TRAINER_WORKDIR/project" -type d -name 'data'
+3) find "$TRAINER_WORKDIR/project" -maxdepth 1 -type f
+4) find "$TRAINER_WORKDIR/project/src" -type f -name '*.py'
+EOF
+
+trainer_finish \
+  "Nice work. You covered find essentials: -name, -type, and -maxdepth." \
+  "Re-run the trainer to improve your score."

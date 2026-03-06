@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v fzf >/dev/null 2>&1; then
+  echo "Error: fzf is not installed or not on your PATH."
+  echo "Install it first, then run this trainer again."
+  exit 1
+fi
+
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "$WORKDIR"' EXIT
+
+cat <<'BANNER'
+====================================
+            fzf Trainer
+====================================
+This trainer is hands-on. You will enter commands and get immediate feedback.
+Tip: use --filter in exercises so fzf runs non-interactively and returns output.
+BANNER
+
+echo
+read -r -p "Press Enter to start... " _
+
+run_challenge() {
+  local title="$1"
+  local instructions="$2"
+  local expected="$3"
+  local hint="$4"
+  local match_mode="${5:-exact}"
+
+  echo
+  echo "--- $title ---"
+  echo "$instructions"
+  echo
+
+  local attempt=1
+  while true; do
+    printf "Attempt %d command> " "$attempt"
+    IFS= read -r cmd
+
+    if [[ "$cmd" == "hint" ]]; then
+      echo "Hint: $hint"
+      continue
+    fi
+
+    if [[ -z "$cmd" ]]; then
+      echo "Enter a command, or type 'hint'."
+      continue
+    fi
+
+    local output
+    set +e
+    output="$(cd "$WORKDIR" && bash -lc "$cmd" 2>&1)"
+    local status=$?
+    set -e
+
+    if [[ $status -ne 0 ]]; then
+      echo "Command failed (exit $status):"
+      echo "$output"
+      attempt=$((attempt + 1))
+      continue
+    fi
+
+    output="$(printf '%s' "$output" | sed '/^$/d')"
+
+    local output_cmp="$output"
+    local expected_cmp="$expected"
+    if [[ "$match_mode" == "set" ]]; then
+      output_cmp="$(printf '%s\n' "$output" | sort)"
+      expected_cmp="$(printf '%s\n' "$expected" | sort)"
+    fi
+
+    if [[ "$output_cmp" == "$expected_cmp" ]]; then
+      echo "Correct."
+      break
+    fi
+
+    echo "Not quite."
+    echo "Expected output:"
+    printf '%s\n' "$expected"
+    echo "Your output:"
+    printf '%s\n' "$output"
+    echo "Type 'hint' for help."
+    attempt=$((attempt + 1))
+  done
+}
+
+run_challenge \
+  "1) Basic fuzzy filtering" \
+  $'From this list: apple, banana, strawberry, blueberry.\nWrite a command that prints only: strawberry\nUse fzf with --filter and feed the list from stdin.' \
+  "strawberry" \
+  "Example pattern: printf '%s\\n' ... | fzf --filter '...'."
+
+run_challenge \
+  "2) Multi-select output" \
+  $'From this list: app.log, worker.log, notes.md, api.log.\nWrite a command that prints only .log files, one per line, using fzf multi-select mode.' \
+  $'app.log\nworker.log\napi.log' \
+  "Use fzf -m --filter '.log'." \
+  "set"
+
+run_challenge \
+  "3) Fielded input" \
+  $'From this list:\n1:build\n2:test\n3:deploy\nUse fzf to match deploy (with --filter), then print only the command name (deploy).' \
+  "deploy" \
+  "Pipe to fzf --filter 'deploy', then cut -d: -f2."
+
+cat <<'OUTRO'
+
+====================================
+Completed: fzf basics
+====================================
+You practiced:
+- fuzzy filtering from stdin
+- multi-select mode (-m)
+- post-processing selected rows with standard UNIX tools
+
+Next useful flags to explore:
+- --preview
+- --height
+- --layout=reverse
+- --bind
+- --ansi
+OUTRO

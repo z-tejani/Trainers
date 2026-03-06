@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "bash" "Error: bash is not installed on this system."
+trainer_init_workdir
+
+cat >"$TRAINER_WORKDIR/tasks.txt" <<'DATA'
+build
+test
+deploy
+DATA
+
+trainer_section "bash redirection trainer"
+echo "Practice output/input redirection with real commands."
+echo "Temporary files live in: $TRAINER_WORKDIR"
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: overwrite stdout with >" \
+  "write command output to a file (overwrite mode)" \
+  "Print only 'build' from $TRAINER_WORKDIR/tasks.txt into $TRAINER_WORKDIR/out.txt using >, then print out.txt" \
+  "build" \
+  "Example shape: <command> > file && cat file"
+
+trainer_expect_contains \
+  "Lesson 2: append with >>" \
+  "append instead of overwriting" \
+  "Append 'release' to $TRAINER_WORKDIR/out.txt using >>, then print out.txt" \
+  "release" \
+  "Use echo 'release' >> $TRAINER_WORKDIR/out.txt && cat $TRAINER_WORKDIR/out.txt"
+
+trainer_expect_contains \
+  "Lesson 3: redirect stderr with 2>" \
+  "capture errors in a separate file" \
+  "Run: ls $TRAINER_WORKDIR/does-not-exist . Redirect stderr to $TRAINER_WORKDIR/err.txt with 2>, then print err.txt (use ';' so cat still runs)." \
+  "No such file or directory" \
+  "Command shape: ls missing 2> err.txt ; cat err.txt"
+
+trainer_expect_contains \
+  "Lesson 4: combine stdout and stderr with 2>&1" \
+  "merge both streams into one file" \
+  "Run: bash -lc 'echo out; echo err >&2' and redirect both streams to $TRAINER_WORKDIR/all.txt, then print all.txt" \
+  "err" \
+  "Use > all.txt 2>&1 and then cat all.txt"
+
+trainer_expect_contains \
+  "Lesson 5: use stdin redirection with <" \
+  "feed a file as standard input" \
+  "Count lines in $TRAINER_WORKDIR/tasks.txt using wc -l with < redirection" \
+  "3" \
+  "Example: wc -l < $TRAINER_WORKDIR/tasks.txt"
+
+trainer_section "Reference answers"
+cat <<ANSWERS
+1) grep '^build$' "$TRAINER_WORKDIR/tasks.txt" > "$TRAINER_WORKDIR/out.txt" && cat "$TRAINER_WORKDIR/out.txt"
+2) echo 'release' >> "$TRAINER_WORKDIR/out.txt" && cat "$TRAINER_WORKDIR/out.txt"
+3) ls "$TRAINER_WORKDIR/does-not-exist" . 2> "$TRAINER_WORKDIR/err.txt" ; cat "$TRAINER_WORKDIR/err.txt"
+4) bash -lc 'echo out; echo err >&2' > "$TRAINER_WORKDIR/all.txt" 2>&1 && cat "$TRAINER_WORKDIR/all.txt"
+5) wc -l < "$TRAINER_WORKDIR/tasks.txt"
+ANSWERS
+
+trainer_finish \
+  "Nice work. You practiced >, >>, 2>, 2>&1, and < redirection." \
+  "Re-run the trainer and improve your score."

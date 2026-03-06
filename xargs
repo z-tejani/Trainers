@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "xargs" "Error: xargs is not installed on this system."
+trainer_init_workdir
+
+cat >"$TRAINER_WORKDIR/words.txt" <<'EOF'
+alpha
+beta
+gamma
+delta
+EOF
+
+cat >"$TRAINER_WORKDIR/files-null.txt" <<'EOF'
+app log
+error log
+EOF
+printf 'app log\0error log\0' >"$TRAINER_WORKDIR/files0"
+
+trainer_section "xargs trainer"
+echo "You will run xargs commands and verify output."
+echo "Sample files are in: $TRAINER_WORKDIR"
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: join arguments" \
+  "convert newline items into one command invocation" \
+  "Run a command that echoes all words from words.txt on one line via xargs" \
+  "alpha beta gamma delta" \
+  "Use: cat file | xargs echo"
+
+trainer_expect_contains \
+  "Lesson 2: batching" \
+  "run command in groups of 2 inputs" \
+  "Run a command that batches words.txt by 2 and prefixes each batch with GROUP:" \
+  "GROUP: alpha beta" \
+  "Use xargs -n 2."
+
+trainer_expect_contains \
+  "Lesson 3: replacement string" \
+  "format each item individually" \
+  "Run a command that prints item=<word> for each word in words.txt" \
+  "item=gamma" \
+  "Use xargs -I{} echo item={}"
+
+trainer_expect_contains \
+  "Lesson 4: null-delimited safety" \
+  "handle filenames containing spaces safely" \
+  "Run a command that reads $TRAINER_WORKDIR/files0 with -0 and prints each item in brackets" \
+  "[error log]" \
+  "Use xargs -0 -I{} echo '[{}]'"
+
+trainer_section "Reference answers"
+cat <<EOF
+1) cat "$TRAINER_WORKDIR/words.txt" | xargs echo
+2) cat "$TRAINER_WORKDIR/words.txt" | xargs -n 2 echo GROUP:
+3) cat "$TRAINER_WORKDIR/words.txt" | xargs -I{} echo item={}
+4) cat "$TRAINER_WORKDIR/files0" | xargs -0 -I{} echo '[{}]'
+EOF
+
+trainer_finish \
+  "Nice work. You covered xargs basics, batching, replacement, and -0 safety." \
+  "Re-run the trainer to improve your score."

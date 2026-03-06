@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+if command -v fd >/dev/null 2>&1; then
+  FD_CMD="fd"
+elif command -v fdfind >/dev/null 2>&1; then
+  FD_CMD="fdfind"
+else
+  echo "Error: fd is not installed on this system."
+  echo "On some systems it is available as fdfind."
+  exit 1
+fi
+
+trainer_init_workdir
+
+mkdir -p "$TRAINER_WORKDIR/project/src"
+mkdir -p "$TRAINER_WORKDIR/project/logs"
+mkdir -p "$TRAINER_WORKDIR/project/data"
+
+cat >"$TRAINER_WORKDIR/project/src/main.py" <<'EOF'
+print("main")
+EOF
+
+cat >"$TRAINER_WORKDIR/project/src/util.py" <<'EOF'
+print("util")
+EOF
+
+cat >"$TRAINER_WORKDIR/project/src/main.ts" <<'EOF'
+console.log("main")
+EOF
+
+cat >"$TRAINER_WORKDIR/project/logs/app.log" <<'EOF'
+ok
+EOF
+
+cat >"$TRAINER_WORKDIR/project/logs/error.log" <<'EOF'
+err
+EOF
+
+cat >"$TRAINER_WORKDIR/project/.env" <<'EOF'
+API_KEY=demo
+EOF
+
+trainer_section "fd trainer"
+echo "You will run fd commands and verify output."
+echo "Sample files are in: $TRAINER_WORKDIR/project"
+echo "Detected fd command: $FD_CMD"
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: extension filter" \
+  "find Python files only" \
+  "Run a command that finds .py files under $TRAINER_WORKDIR/project/src" \
+  "main.py" \
+  "Use -e py."
+
+trainer_expect_contains \
+  "Lesson 2: directory filter" \
+  "find directories named data" \
+  "Run a command that finds only directories named data under project" \
+  "project/data" \
+  "Use -t d data <path>."
+
+trainer_expect_contains \
+  "Lesson 3: hidden files" \
+  "find .env (hidden file)" \
+  "Run a command that finds .env under project (include hidden files)" \
+  ".env" \
+  "Use -H to include hidden entries."
+
+trainer_expect_contains \
+  "Lesson 4: exec action" \
+  "run basename on matching log files" \
+  "Run a command that finds *.log in project and prints only basenames via exec" \
+  "error.log" \
+  "Use -x basename."
+
+trainer_section "Reference answers"
+cat <<EOF
+1) $FD_CMD -e py . "$TRAINER_WORKDIR/project/src"
+2) $FD_CMD -t d '^data$' "$TRAINER_WORKDIR/project"
+3) $FD_CMD -H '^\\.env$' "$TRAINER_WORKDIR/project"
+4) $FD_CMD -e log . "$TRAINER_WORKDIR/project" -x basename
+EOF
+
+trainer_finish \
+  "Nice work. You covered fd filters, hidden files, and -x actions." \
+  "Re-run the trainer to improve your score."
