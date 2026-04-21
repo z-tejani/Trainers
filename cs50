@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
+
+trainer_require_cmd "python3" "Error: python3 is not installed on this system."
+trainer_init_workdir
+
+trainer_section "CS50 comprehensive trainer"
+echo "This trainer covers CS50's full concept arc from computational thinking to web and security."
+echo "Format: each lesson asks for a command whose output contains a target concept."
+echo "Use: teach, hint, or skip during any lesson."
+trainer_pause
+
+trainer_expect_contains \
+  "Lesson 1: binary representation" \
+  "convert decimal values to binary" \
+  "Run a command that prints binary for 13" \
+  "1101" \
+  "Example: python3 -c \"print(format(13, 'b'))\""
+
+trainer_expect_contains \
+  "Lesson 2: ASCII and text encoding" \
+  "map characters to integer codes" \
+  "Run a command that prints the ASCII code for A" \
+  "65" \
+  "Example: python3 -c \"print(ord('A'))\""
+
+trainer_expect_contains \
+  "Lesson 3: algorithms and runtime" \
+  "identify algorithmic growth classes" \
+  "Run a command that prints the phrase O(log n)" \
+  "O(log n)" \
+  "Use echo or python3 -c to print the exact phrase."
+
+trainer_expect_contains \
+  "Lesson 4: C primitives" \
+  "recognize core C data types" \
+  "Run a command that prints int,float,char" \
+  "int,float,char" \
+  "Print the values in a comma-separated string."
+
+trainer_expect_contains \
+  "Lesson 5: control flow" \
+  "use loops and conditionals" \
+  "Run a command that prints FizzBuzz from 1 to 15 and includes FizzBuzz" \
+  "FizzBuzz" \
+  "python3 -c with a short loop works well."
+
+trainer_expect_contains \
+  "Lesson 6: arrays and strings" \
+  "index collections and string slices" \
+  "Run a command that prints the second character of CS50" \
+  "S" \
+  "Example: python3 -c \"print('CS50'[1])\""
+
+trainer_expect_contains \
+  "Lesson 7: memory and pointers" \
+  "understand addresses and dereferencing" \
+  "Run a command that prints the phrase pointer -> address" \
+  "pointer -> address" \
+  "Any command output is fine if it includes the target phrase."
+
+trainer_expect_contains \
+  "Lesson 8: stack vs heap" \
+  "distinguish memory regions" \
+  "Run a command that prints stack,heap" \
+  "stack,heap" \
+  "Echo is enough; focus on concept vocabulary."
+
+trainer_expect_contains \
+  "Lesson 9: dynamic memory" \
+  "connect malloc/free to resource lifetime" \
+  "Run a command that prints malloc/free" \
+  "malloc/free" \
+  "Print exact token to confirm the concept."
+
+trainer_expect_contains \
+  "Lesson 10: data structures" \
+  "compare common structures" \
+  "Run a command that prints hash table" \
+  "hash table" \
+  "Use python3 -c or echo."
+
+trainer_expect_contains \
+  "Lesson 11: recursion" \
+  "solve problems via self-reference" \
+  "Run a command that computes factorial(5)" \
+  "120" \
+  "python3 -c \"import math; print(math.factorial(5))\" works."
+
+trainer_expect_contains \
+  "Lesson 12: searching" \
+  "contrast linear and binary search" \
+  "Run a command that prints linear,binary" \
+  "linear,binary" \
+  "Output both terms in order."
+
+trainer_expect_contains \
+  "Lesson 13: sorting" \
+  "recognize classic sorting algorithms" \
+  "Run a command that prints merge sort" \
+  "merge sort" \
+  "Print the exact phrase merge sort."
+
+trainer_expect_contains \
+  "Lesson 14: debugging and testing" \
+  "use assertions and test cases" \
+  "Run a command that prints assert" \
+  "assert" \
+  "Example: python3 -c \"print('assert')\""
+
+trainer_expect_contains \
+  "Lesson 15: Python fundamentals" \
+  "translate C logic into Python" \
+  "Run a command that prints a list comprehension result [0, 1, 4, 9]" \
+  "[0, 1, 4, 9]" \
+  "Example: python3 -c \"print([n*n for n in range(4)])\""
+
+trainer_expect_contains \
+  "Lesson 16: files and CSV" \
+  "persist and parse structured text" \
+  "Run a command that prints comma,separated,values" \
+  "comma,separated,values" \
+  "Use echo or python to print that phrase."
+
+trainer_expect_contains \
+  "Lesson 17: SQL basics" \
+  "query tabular data with SELECT" \
+  "Run a command that prints SELECT * FROM students;" \
+  "SELECT * FROM students;" \
+  "No database required for this check; print the query string."
+
+trainer_expect_contains \
+  "Lesson 18: joins and normalization" \
+  "relate tables and reduce duplication" \
+  "Run a command that prints INNER JOIN" \
+  "INNER JOIN" \
+  "Print exact SQL phrase."
+
+trainer_expect_contains \
+  "Lesson 19: HTTP" \
+  "understand request/response basics" \
+  "Run a command that prints 200 OK" \
+  "200 OK" \
+  "Print status code phrase directly."
+
+trainer_expect_contains \
+  "Lesson 20: HTML semantics" \
+  "use meaningful markup" \
+  "Run a command that prints <main>" \
+  "<main>" \
+  "Escape quotes correctly when printing angle brackets."
+
+trainer_expect_contains \
+  "Lesson 21: CSS and layout" \
+  "style with selectors and box model" \
+  "Run a command that prints display: grid" \
+  "display: grid" \
+  "Echo the property-value pair."
+
+trainer_expect_contains \
+  "Lesson 22: JavaScript and DOM" \
+  "manipulate page state" \
+  "Run a command that prints addEventListener" \
+  "addEventListener" \
+  "Print the JS API name exactly."
+
+trainer_expect_contains \
+  "Lesson 23: Flask and routes" \
+  "map URLs to handlers" \
+  "Run a command that prints @app.route" \
+  "@app.route" \
+  "Print decorator syntax as plain text."
+
+trainer_expect_contains \
+  "Lesson 24: authentication" \
+  "protect credentials and sessions" \
+  "Run a command that prints hash + salt" \
+  "hash + salt" \
+  "Focus on vocabulary, not implementation in this step."
+
+trainer_expect_contains \
+  "Lesson 25: web security" \
+  "identify common attacks and mitigations" \
+  "Run a command that prints CSRF" \
+  "CSRF" \
+  "Print one security acronym exactly."
+
+trainer_expect_contains \
+  "Lesson 26: scalability" \
+  "explain horizontal scaling and caching" \
+  "Run a command that prints load balancer" \
+  "load balancer" \
+  "Print the phrase exactly."
+
+trainer_expect_contains \
+  "Lesson 27: ethics and impact" \
+  "consider fairness, privacy, and tradeoffs" \
+  "Run a command that prints privacy" \
+  "privacy" \
+  "A one-word output is enough for this check."
+
+trainer_expect_contains \
+  "Lesson 28: final project thinking" \
+  "connect problem, users, data, and architecture" \
+  "Run a command that prints MVP" \
+  "MVP" \
+  "Print the acronym as your output."
+
+trainer_section "Reference answers"
+cat <<'ANSWERS'
+1)  python3 -c "print(format(13, 'b'))"
+2)  python3 -c "print(ord('A'))"
+3)  echo "O(log n)"
+4)  echo "int,float,char"
+5)  python3 -c "print(' '.join('FizzBuzz' if i%15==0 else 'Fizz' if i%3==0 else 'Buzz' if i%5==0 else str(i) for i in range(1,16)))"
+6)  python3 -c "print('CS50'[1])"
+7)  echo "pointer -> address"
+8)  echo "stack,heap"
+9)  echo "malloc/free"
+10) echo "hash table"
+11) python3 -c "import math; print(math.factorial(5))"
+12) echo "linear,binary"
+13) echo "merge sort"
+14) echo "assert"
+15) python3 -c "print([n*n for n in range(4)])"
+16) echo "comma,separated,values"
+17) echo "SELECT * FROM students;"
+18) echo "INNER JOIN"
+19) echo "200 OK"
+20) echo "<main>"
+21) echo "display: grid"
+22) echo "addEventListener"
+23) echo "@app.route"
+24) echo "hash + salt"
+25) echo "CSRF"
+26) echo "load balancer"
+27) echo "privacy"
+28) echo "MVP"
+ANSWERS
+
+trainer_finish \
+  "Excellent. You touched every major CS50 concept cluster end-to-end." \
+  "Good progress. Re-run to reinforce weak areas and aim for a perfect score."

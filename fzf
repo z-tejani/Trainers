@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
-if ! command -v fzf >/dev/null 2>&1; then
-  echo "Error: fzf is not installed or not on your PATH."
-  echo "Install it first, then run this trainer again."
-  exit 1
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/lib/trainer.sh"
 
-WORKDIR="$(mktemp -d)"
-trap 'rm -rf "$WORKDIR"' EXIT
+trainer_require_cmd "fzf" "Error: fzf is not installed or not on your PATH."
+trainer_init_workdir
+
+WORKDIR="$TRAINER_WORKDIR"
 
 cat <<'BANNER'
 ====================================
@@ -19,90 +20,184 @@ Tip: use --filter in exercises so fzf runs non-interactively and returns output.
 BANNER
 
 echo
-read -r -p "Press Enter to start... " _
+echo "Mode: $TRAINER_MODE"
+trainer_pause
 
 run_challenge() {
   local title="$1"
-  local instructions="$2"
-  local expected="$3"
-  local hint="$4"
-  local match_mode="${5:-exact}"
+  local concept="$2"
+  local instructions="$3"
+  local expected="$4"
+  local hint="$5"
+  local teach="$6"
+  local match_mode="${7:-exact}"
+  local cmd output status attempt output_cmp expected_cmp
 
-  echo
-  echo "--- $title ---"
-  echo "$instructions"
-  echo
+  TRAINER_TOTAL=$((TRAINER_TOTAL + 1))
+  trainer_section "$title"
+  echo "Concept: $concept"
+  echo "Mode: $TRAINER_MODE"
 
-  local attempt=1
-  while true; do
-    printf "Attempt %d command> " "$attempt"
-    IFS= read -r cmd
+  case "$TRAINER_MODE" in
+    manual)
+      if [[ -n "$teach" ]]; then
+        echo "Mini-lesson: $teach"
+      fi
+      echo "$instructions"
+      echo "Suggested approach: $hint"
+      echo "Target output:"
+      printf '%s\n' "$expected"
+      return
+      ;;
+    test)
+      echo "$instructions"
+      echo "Test mode: one attempt, no teach/hint/skip commands."
+      read -r -p "> " cmd
 
-    if [[ "$cmd" == "hint" ]]; then
-      echo "Hint: $hint"
-      continue
-    fi
+      if [[ -z "$cmd" ]]; then
+        echo "No answer provided."
+        echo "Expected output:"
+        printf '%s\n' "$expected"
+        return
+      fi
 
-    if [[ -z "$cmd" ]]; then
-      echo "Enter a command, or type 'hint'."
-      continue
-    fi
+      set +e
+      output="$(cd "$WORKDIR" && bash -lc "$cmd" 2>&1)"
+      status=$?
+      set -e
 
-    local output
-    set +e
-    output="$(cd "$WORKDIR" && bash -lc "$cmd" 2>&1)"
-    local status=$?
-    set -e
+      if [[ $status -ne 0 ]]; then
+        echo "Command failed (exit $status):"
+        echo "$output"
+        echo "Expected output:"
+        printf '%s\n' "$expected"
+        return
+      fi
+      ;;
+    *)
+      if [[ -n "$teach" ]]; then
+        echo "Mini-lesson: $teach"
+      fi
+      echo "$instructions"
+      echo "Interactive commands: teach, hint, skip"
+      echo
 
-    if [[ $status -ne 0 ]]; then
-      echo "Command failed (exit $status):"
-      echo "$output"
-      attempt=$((attempt + 1))
-      continue
-    fi
+      attempt=1
+      while true; do
+        printf "Attempt %d command> " "$attempt"
+        IFS= read -r cmd
 
-    output="$(printf '%s' "$output" | sed '/^$/d')"
+        if [[ "$cmd" == "teach" ]]; then
+          if [[ -n "$teach" ]]; then
+            echo "Mini-lesson: $teach"
+          else
+            echo "Mini-lesson: start with a minimal command, inspect output, then refine."
+          fi
+          continue
+        fi
 
-    local output_cmp="$output"
-    local expected_cmp="$expected"
-    if [[ "$match_mode" == "set" ]]; then
-      output_cmp="$(printf '%s\n' "$output" | sort)"
-      expected_cmp="$(printf '%s\n' "$expected" | sort)"
-    fi
+        if [[ "$cmd" == "hint" ]]; then
+          echo "Hint: $hint"
+          continue
+        fi
 
-    if [[ "$output_cmp" == "$expected_cmp" ]]; then
-      echo "Correct."
-      break
-    fi
+        if [[ "$cmd" == "skip" ]]; then
+          echo "Skipped. Expected output:"
+          printf '%s\n' "$expected"
+          return
+        fi
 
-    echo "Not quite."
-    echo "Expected output:"
-    printf '%s\n' "$expected"
-    echo "Your output:"
-    printf '%s\n' "$output"
-    echo "Type 'hint' for help."
-    attempt=$((attempt + 1))
-  done
+        if [[ -z "$cmd" ]]; then
+          echo "Enter a command, or use: teach, hint, skip."
+          continue
+        fi
+
+        set +e
+        output="$(cd "$WORKDIR" && bash -lc "$cmd" 2>&1)"
+        status=$?
+        set -e
+
+        if [[ $status -ne 0 ]]; then
+          echo "Command failed (exit $status):"
+          echo "$output"
+          attempt=$((attempt + 1))
+          continue
+        fi
+
+        output="$(printf '%s' "$output" | sed '/^$/d')"
+        output_cmp="$output"
+        expected_cmp="$expected"
+        if [[ "$match_mode" == "set" ]]; then
+          output_cmp="$(printf '%s\n' "$output" | sort)"
+          expected_cmp="$(printf '%s\n' "$expected" | sort)"
+        fi
+
+        if [[ "$output_cmp" == "$expected_cmp" ]]; then
+          echo "Correct."
+          TRAINER_SCORE=$((TRAINER_SCORE + 1))
+          return
+        fi
+
+        echo "Not quite."
+        echo "Expected output:"
+        printf '%s\n' "$expected"
+        echo "Your output:"
+        printf '%s\n' "$output"
+        echo "Type 'hint' for help."
+        attempt=$((attempt + 1))
+      done
+      ;;
+  esac
+
+  output="$(printf '%s' "$output" | sed '/^$/d')"
+
+  output_cmp="$output"
+  expected_cmp="$expected"
+  if [[ "$match_mode" == "set" ]]; then
+    output_cmp="$(printf '%s\n' "$output" | sort)"
+    expected_cmp="$(printf '%s\n' "$expected" | sort)"
+  fi
+
+  if [[ "$output_cmp" == "$expected_cmp" ]]; then
+    echo "Correct."
+    TRAINER_SCORE=$((TRAINER_SCORE + 1))
+    return
+  fi
+
+  echo "Not quite."
+  echo "Expected output:"
+  printf '%s\n' "$expected"
+  echo "Your output:"
+  printf '%s\n' "$output"
+  if [[ "$TRAINER_MODE" == "guided" ]]; then
+    echo "Type 'hint' for help and try again by re-running the lesson next time."
+  fi
 }
 
 run_challenge \
   "1) Basic fuzzy filtering" \
+  "Use fzf --filter for deterministic fuzzy selection from stdin." \
   $'From this list: apple, banana, strawberry, blueberry.\nWrite a command that prints only: strawberry\nUse fzf with --filter and feed the list from stdin.' \
   "strawberry" \
-  "Example pattern: printf '%s\\n' ... | fzf --filter '...'."
+  "Example pattern: printf '%s\\n' ... | fzf --filter '...'." \
+  "fzf scores candidates by fuzzy match. --filter avoids full-screen mode and returns selected rows."
 
 run_challenge \
   "2) Multi-select output" \
+  "Use -m to return multiple matching rows." \
   $'From this list: app.log, worker.log, notes.md, api.log.\nWrite a command that prints only .log files, one per line, using fzf multi-select mode.' \
   $'app.log\nworker.log\napi.log' \
   "Use fzf -m --filter '.log'." \
+  "Combine -m with --filter to treat fzf as a fuzzy batch selector in scripts." \
   "set"
 
 run_challenge \
   "3) Fielded input" \
+  "Pipe fzf output into other UNIX tools for final shaping." \
   $'From this list:\n1:build\n2:test\n3:deploy\nUse fzf to match deploy (with --filter), then print only the command name (deploy).' \
   "deploy" \
-  "Pipe to fzf --filter 'deploy', then cut -d: -f2."
+  "Pipe to fzf --filter 'deploy', then cut -d: -f2." \
+  "A common pattern is selector first (fzf), then transform (cut/awk/sed)."
 
 cat <<'OUTRO'
 
@@ -121,3 +216,7 @@ Next useful flags to explore:
 - --bind
 - --ansi
 OUTRO
+
+trainer_finish \
+  "Nice work. You covered core fzf scripting patterns." \
+  "Re-run the trainer to improve your score."
