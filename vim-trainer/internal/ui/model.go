@@ -33,6 +33,7 @@ type route string
 const (
 	routeHome         route = "home"
 	routeCampaign     route = "campaign"
+	routeChallenge    route = "challenge"
 	routeLesson       route = "lesson"
 	routeSummary      route = "summary"
 	routeStats        route = "stats"
@@ -69,21 +70,22 @@ type summaryState struct {
 }
 
 type App struct {
-	cfg            Config
-	catalog        *content.Catalog
-	store          *progress.Store
-	profile        *progress.Profile
-	width          int
-	height         int
-	route          route
-	status         string
-	homeCursor     int
-	moduleCursor   int
-	settingsCursor int
-	homeItems      []menuItem
-	session        *lessonSession
-	summary        *summaryState
-	showReplay     bool
+	cfg             Config
+	catalog         *content.Catalog
+	store           *progress.Store
+	profile         *progress.Profile
+	width           int
+	height          int
+	route           route
+	status          string
+	homeCursor      int
+	moduleCursor    int
+	challengeCursor int
+	settingsCursor  int
+	homeItems       []menuItem
+	session         *lessonSession
+	summary         *summaryState
+	showReplay      bool
 }
 
 func NewApp(cfg Config) *App {
@@ -153,6 +155,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.updateHome(msg)
 		case routeCampaign:
 			a.updateCampaign(msg)
+		case routeChallenge:
+			a.updateChallenge(msg)
 		case routeLesson:
 			a.updateLesson(msg)
 		case routeSummary:
@@ -174,6 +178,8 @@ func (a *App) View() string {
 	switch a.route {
 	case routeCampaign:
 		return a.viewCampaign()
+	case routeChallenge:
+		return a.viewChallenge()
 	case routeLesson:
 		return a.viewLesson()
 	case routeSummary:
@@ -228,7 +234,7 @@ func (a *App) activateHome(action string) {
 	case "review":
 		a.startGeneratedQueue("review", progress.QueueReview)
 	case "challenge":
-		a.startGeneratedQueue("challenge", progress.QueueChallenge)
+		a.route = routeChallenge
 	case "stats":
 		a.route = routeStats
 	case "settings":
@@ -273,27 +279,69 @@ func (a *App) updateCampaign(msg tea.KeyMsg) {
 	}
 }
 
+func (a *App) updateChallenge(msg tea.KeyMsg) {
+	items := a.challengeItems()
+	switch msg.String() {
+	case "esc":
+		a.route = routeHome
+	case "j", "down":
+		if a.challengeCursor < len(items)-1 {
+			a.challengeCursor++
+		}
+	case "k", "up":
+		if a.challengeCursor > 0 {
+			a.challengeCursor--
+		}
+	case "enter", " ":
+		if len(items) == 0 {
+			return
+		}
+		action := items[a.challengeCursor].Action
+		if action == "challenge-adaptive" {
+			a.startGeneratedQueue("challenge", progress.QueueChallenge)
+			return
+		}
+		if strings.HasPrefix(action, "challenge-module:") {
+			moduleID := strings.TrimPrefix(action, "challenge-module:")
+			a.startChallengeModuleQueue(moduleID)
+			return
+		}
+	}
+}
+
 func (a *App) updateLesson(msg tea.KeyMsg) {
-	if msg.String() == "f2" {
+	key := msg.String()
+	if key == "f2" {
 		a.route = routeHome
 		a.status = "Returned to the home screen."
 		return
 	}
-	if msg.String() == "f5" {
+	if key == "f5" {
 		a.restartCurrentLesson()
 		return
 	}
-	if msg.String() == "?" {
+	if key == "?" {
 		a.profile.Settings.ShowHints = !a.profile.Settings.ShowHints
 		_ = a.store.Save(a.profile)
 		return
 	}
-	if msg.String() == "f6" {
+	if key == "f6" {
 		a.showReplay = !a.showReplay
 		return
 	}
+	if key == "enter" {
+		state := a.session.Editor.State()
+		if state.Mode != engine.ModeCommand && state.Mode != engine.ModeSearch {
+			feedback := a.catalog.Evaluate(a.session.Lesson, state)
+			a.session.Feedback = feedback
+			if feedback.Completed {
+				a.completeLesson()
+			}
+			return
+		}
+	}
 
-	result := a.session.Editor.ProcessKey(msg.String())
+	result := a.session.Editor.ProcessKey(key)
 	state := a.session.Editor.State()
 	feedback := a.catalog.Evaluate(a.session.Lesson, state)
 	a.session.Feedback = feedback
@@ -301,14 +349,7 @@ func (a *App) updateLesson(msg tea.KeyMsg) {
 		a.session.Mistakes = appendUnique(a.session.Mistakes, result.Token)
 	}
 	if feedback.Completed {
-		duration := time.Since(a.session.StartedAt)
-		a.profile.RecordLesson(a.session.Lesson, true, duration, "")
-		a.profile.LastMode = a.session.Mode
-		a.profile.LastLessonID = a.session.Lesson.ID
-		a.profile.RefreshModules(a.catalog)
-		_ = a.store.Save(a.profile)
-		a.summary = a.buildSummary()
-		a.route = routeSummary
+		a.completeLesson()
 		return
 	}
 
@@ -317,6 +358,17 @@ func (a *App) updateLesson(msg tea.KeyMsg) {
 		a.profile.RecordLesson(a.session.Lesson, false, 0, note)
 		_ = a.store.Save(a.profile)
 	}
+}
+
+func (a *App) completeLesson() {
+	duration := time.Since(a.session.StartedAt)
+	a.profile.RecordLesson(a.session.Lesson, true, duration, "")
+	a.profile.LastMode = a.session.Mode
+	a.profile.LastLessonID = a.session.Lesson.ID
+	a.profile.RefreshModules(a.catalog)
+	_ = a.store.Save(a.profile)
+	a.summary = a.buildSummary()
+	a.route = routeSummary
 }
 
 func (a *App) updateSummary(msg tea.KeyMsg) {
@@ -429,6 +481,43 @@ func (a *App) startGeneratedQueue(mode string, style progress.QueueStyle) {
 	a.startSingleLesson(mode, queue[0], queue, 0)
 }
 
+func (a *App) startChallengeModuleQueue(moduleID string) {
+	module, ok := a.catalog.Module(moduleID)
+	if !ok {
+		a.status = "Unknown challenge module: " + moduleID
+		a.route = routeChallenge
+		return
+	}
+	if !a.profile.ModuleUnlocked(module) {
+		a.status = "That module is still locked. Finish prerequisites first."
+		a.route = routeChallenge
+		return
+	}
+
+	adaptive := a.profile.QueueForStyle(a.catalog, progress.QueueChallenge, 60)
+	var queue []string
+	for _, lesson := range adaptive {
+		if lesson.ModuleID == moduleID {
+			queue = append(queue, lesson.ID)
+		}
+	}
+	if len(queue) == 0 {
+		lessons := a.catalog.LessonsForModule(moduleID)
+		for _, lesson := range lessons {
+			queue = append(queue, lesson.ID)
+		}
+	}
+	if len(queue) == 0 {
+		a.status = "No challenge lessons available for this module yet."
+		a.route = routeChallenge
+		return
+	}
+	if len(queue) > 10 {
+		queue = queue[:10]
+	}
+	a.startSingleLesson("challenge", queue[0], queue, 0)
+}
+
 func (a *App) startModuleQueue(mode, moduleID string) {
 	lessons := a.catalog.LessonsForModule(moduleID)
 	if len(lessons) == 0 {
@@ -494,6 +583,8 @@ func (a *App) advanceAfterSummary() {
 	switch a.session.Mode {
 	case "campaign":
 		a.route = routeCampaign
+	case "challenge":
+		a.route = routeChallenge
 	default:
 		a.route = routeHome
 	}
@@ -565,6 +656,44 @@ func (a *App) viewCampaign() string {
 	return strings.Join(lines, "\n")
 }
 
+func (a *App) viewChallenge() string {
+	items := a.challengeItems()
+	var lines []string
+	lines = append(lines, bold("Challenge"))
+	lines = append(lines, dim("Choose a challenge track. Adaptive uses your weak spots and due-review skills."))
+	lines = append(lines, "")
+
+	available := a.height - 10
+	if available < 4 {
+		available = 4
+	}
+	start, end := visibleRange(len(items), a.challengeCursor, available)
+	if start > 0 {
+		lines = append(lines, dim("  ..."))
+	}
+	for i := start; i < end; i++ {
+		item := items[i]
+		prefix := "  "
+		if i == a.challengeCursor {
+			prefix = cyan("> ")
+		}
+		lines = append(lines, prefix+item.Label+reset())
+	}
+	if end < len(items) {
+		lines = append(lines, dim("  ..."))
+	}
+	lines = append(lines, "")
+	if len(items) > 0 && a.challengeCursor < len(items) {
+		lines = append(lines, dim(wrap("Selected: "+items[a.challengeCursor].Description, a.width)))
+	}
+	lines = append(lines, "")
+	lines = append(lines, a.footer("Enter starts selected challenge track. Esc returns home."))
+	if a.status != "" {
+		lines = append(lines, yellow(a.status))
+	}
+	return strings.Join(lines, "\n")
+}
+
 func (a *App) viewLesson() string {
 	state := a.session.Editor.State()
 	var lines []string
@@ -604,7 +733,7 @@ func (a *App) viewLesson() string {
 		lines = append(lines, dim(fmt.Sprintf("Debug: token=%q count=%q pending=%q op=%q textobj=%q recording=%q last_change=%v",
 			state.LastResult.Token, state.PendingCount, state.PendingPrefix, string(state.PendingOperator), string(state.PendingTextObject), string(state.RecordingRegister), state.LastChange)))
 	}
-	lines = append(lines, a.footer("F2 home, F5 restart, F6 explain replay, ? hints, Ctrl+C quit."))
+	lines = append(lines, a.footer("Enter submit, F2 home, F5 restart, F6 explain replay, ? hints, Ctrl+C quit."))
 	return strings.Join(lines, "\n")
 }
 
@@ -793,6 +922,33 @@ func doneModules(modules map[string]bool) []string {
 		}
 	}
 	return out
+}
+
+func (a *App) challengeItems() []menuItem {
+	items := []menuItem{
+		{
+			Label:       "Adaptive Challenge",
+			Description: "Mixed queue based on your mastery, mistakes, and review recency.",
+			Action:      "challenge-adaptive",
+		},
+	}
+	for _, module := range a.catalog.Modules() {
+		if !a.profile.ModuleUnlocked(module) {
+			continue
+		}
+		items = append(items, menuItem{
+			Label:       module.Title + " Challenge",
+			Description: module.Summary,
+			Action:      "challenge-module:" + module.ID,
+		})
+	}
+	if a.challengeCursor >= len(items) {
+		a.challengeCursor = len(items) - 1
+	}
+	if a.challengeCursor < 0 {
+		a.challengeCursor = 0
+	}
+	return items
 }
 
 func recentTokens(tokens []string) string {

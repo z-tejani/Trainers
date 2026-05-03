@@ -52,6 +52,53 @@ func TestChallengeCommandStartsLessonQueue(t *testing.T) {
 	}
 }
 
+func TestHomeChallengeOpensChallengeBrowser(t *testing.T) {
+	store := progress.NewStore(t.TempDir())
+	profile, err := store.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	app := NewApp(Config{
+		Command: "home",
+		Options: Options{},
+		Catalog: content.NewCatalog(),
+		Store:   store,
+		Profile: profile,
+	})
+	app.homeCursor = 5 // Challenge
+
+	model, _ := app.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	got := model.(*App)
+	if got.route != routeChallenge {
+		t.Fatalf("route = %s, want %s", got.route, routeChallenge)
+	}
+}
+
+func TestChallengeBrowserEnterStartsQueue(t *testing.T) {
+	store := progress.NewStore(t.TempDir())
+	profile, err := store.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	app := NewApp(Config{
+		Command: "home",
+		Options: Options{},
+		Catalog: content.NewCatalog(),
+		Store:   store,
+		Profile: profile,
+	})
+	app.route = routeChallenge
+
+	model, _ := app.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	got := model.(*App)
+	if got.route != routeLesson {
+		t.Fatalf("route = %s, want %s", got.route, routeLesson)
+	}
+	if got.session == nil {
+		t.Fatal("expected active challenge lesson session")
+	}
+}
+
 func TestVisibleRangeKeepsCursorInWindow(t *testing.T) {
 	start, end := visibleRange(20, 0, 5)
 	if start != 0 || end != 5 {
