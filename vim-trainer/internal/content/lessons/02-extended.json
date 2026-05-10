@@ -1,0 +1,498 @@
+[
+  {
+    "id": "visual-basic-delete",
+    "module_id": "visual",
+    "title": "Visual Character Delete",
+    "goal": "Delete `TODO` using visual mode with `v`, `e`, then `d`.",
+    "explanation": "Visual mode is ideal when you can see the range and want an immediate operation.",
+    "hints": ["Press v to enter visual mode.", "Move to the end of TODO with e.", "Press d to delete the selected text."],
+    "skills": ["visual.char", "visual.delete"],
+    "commands_learned": ["v", "e", "d"],
+    "canonical_solutions": ["ved"],
+    "focus_tokens": ["v", "e", "vd"],
+    "rule": "Use visual mode when selecting and operating on a region is clearer than building an operator motion.",
+    "initial": {
+      "buffers": [{"name": "todo.txt", "lines": ["TODO"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [""],
+      "success_text": "You selected and deleted a visual range."
+    }
+  },
+  {
+    "id": "visual-line-yank-paste",
+    "module_id": "visual",
+    "title": "Visual Line Yank And Paste",
+    "goal": "Yank the middle line with `V y`, move down, then paste with `p`.",
+    "explanation": "Linewise visual mode is useful for copy-and-reorder tasks.",
+    "hints": ["Use V to enter visual-line mode.", "Press y to yank the line.", "Move down with j and paste with p."],
+    "skills": ["visual.line", "operators.yank", "operators.paste"],
+    "commands_learned": ["V", "y", "p"],
+    "canonical_solutions": ["Vyjp"],
+    "focus_tokens": ["V", "vy", "p"],
+    "rule": "Linewise yanks are useful when structure matters more than exact columns.",
+    "initial": {
+      "buffers": [{"name": "order.txt", "lines": ["alpha", "beta", "gamma"]}],
+      "windows": [{"buffer": 0, "row": 1, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["alpha", "beta", "gamma", "beta"],
+      "success_text": "You yanked a full line in visual mode and pasted it."
+    }
+  },
+  {
+    "id": "textobjects-quotes",
+    "module_id": "textobjects-advanced",
+    "title": "Change Inside Quotes",
+    "goal": "Replace `pending` with `done` using `ci\"`.",
+    "explanation": "Quote text objects let you edit values without touching the surrounding syntax.",
+    "hints": ["Place the cursor inside the quoted text.", "Use c i \" then type done and Esc."],
+    "skills": ["textobjects.quote", "operators.change"],
+    "commands_learned": ["ci\""],
+    "canonical_solutions": ["ci\"done Esc"],
+    "focus_tokens": ["ci\""],
+    "rule": "Text objects are safer than manual cursor movement for structured edits.",
+    "initial": {
+      "buffers": [{"name": "config.lua", "lines": ["status = \"pending\""]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 11}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "mode_is", "mode": "normal"},
+        {"type": "buffer_equals", "buffer": ["status = \"done\""]}
+      ],
+      "success_text": "You changed only the text inside the quotes."
+    }
+  },
+  {
+    "id": "textobjects-parens",
+    "module_id": "textobjects-advanced",
+    "title": "Delete Inside Parentheses",
+    "goal": "Use `di(` to remove function arguments from `deploy(api, true)`.",
+    "explanation": "Parenthesis text objects are core for editing function calls and signatures.",
+    "hints": ["Place the cursor between ( and ).", "Use d i (."],
+    "skills": ["textobjects.paren", "operators.delete"],
+    "commands_learned": ["di("],
+    "canonical_solutions": ["di("],
+    "focus_tokens": ["di("],
+    "rule": "Use inner objects (`i`) when you want to preserve delimiters.",
+    "initial": {
+      "buffers": [{"name": "call.go", "lines": ["deploy(api, true)"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 8}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["deploy()"],
+      "success_text": "You removed only the content inside the parentheses."
+    }
+  },
+  {
+    "id": "textobjects-paragraph",
+    "module_id": "textobjects-advanced",
+    "title": "Delete Around Paragraph",
+    "goal": "Use `dap` to remove the first paragraph and the separator line.",
+    "explanation": "Paragraph objects are useful for prose and commit message cleanup.",
+    "hints": ["Start in the first paragraph.", "Use d a p."],
+    "skills": ["textobjects.paragraph", "operators.delete"],
+    "commands_learned": ["dap"],
+    "canonical_solutions": ["dap"],
+    "focus_tokens": ["dap"],
+    "rule": "Around objects (`a`) include surrounding separators when appropriate.",
+    "initial": {
+      "buffers": [{"name": "notes.md", "lines": ["alpha", "beta", "", "tail"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["tail"],
+      "success_text": "You deleted a paragraph as a structural unit."
+    }
+  },
+  {
+    "id": "jumps-jumplist",
+    "module_id": "jumps",
+    "title": "Jumplist Back And Forward",
+    "goal": "Search `deploy`, move to next hit, then use Ctrl-o and Ctrl-i to move through jump history.",
+    "explanation": "Jumplist navigation lets you explore aggressively and still return safely.",
+    "hints": ["Use /deploy and Enter.", "Use n to move forward.", "Then Ctrl-o and Ctrl-i."],
+    "skills": ["jumps.list", "search.repeat"],
+    "commands_learned": ["/", "n", "Ctrl-o", "Ctrl-i"],
+    "canonical_solutions": ["/deploy Enter n ctrl+o ctrl+i"],
+    "focus_tokens": ["<C-o>", "<C-i>"],
+    "rule": "Jump history is a navigation safety net for large files.",
+    "initial": {
+      "buffers": [{"name": "release.txt", "lines": ["build", "deploy staging", "deploy production"]}]
+    },
+    "check": {
+      "type": "cursor_row_is",
+      "row": 2,
+      "success_text": "You used jumplist navigation to move back and forward through jumps."
+    }
+  },
+  {
+    "id": "jumps-changelist",
+    "module_id": "jumps",
+    "title": "Change List Navigation",
+    "goal": "Make edits on two lines, then use `g;` to jump to an older change.",
+    "explanation": "Changelist jumps are useful when revisiting recent edits quickly.",
+    "hints": ["Delete one char with x, move down, delete another with x.", "Then use g;."],
+    "skills": ["jumps.changelist"],
+    "commands_learned": ["x", "g;"],
+    "canonical_solutions": ["xjxg;"],
+    "focus_tokens": ["g;"],
+    "rule": "Use changelist jumps when reviewing or finishing recent edits.",
+    "initial": {
+      "buffers": [{"name": "changes.txt", "lines": ["ab", "cd"]}]
+    },
+    "check": {
+      "type": "cursor_row_is",
+      "row": 0,
+      "success_text": "You jumped back to an older change location."
+    }
+  },
+  {
+    "id": "registers-named",
+    "module_id": "registers",
+    "title": "Named Register Reuse",
+    "goal": "Yank the first line into register a, jump to the bottom, then paste it.",
+    "explanation": "Named registers let you keep reusable text while performing other edits.",
+    "hints": ["Use \"a then yy.", "Jump to bottom with G.", "Paste with p."],
+    "skills": ["registers.named", "operators.yank", "operators.paste"],
+    "commands_learned": ["\"ayy", "G", "p"],
+    "canonical_solutions": ["\"ayyGp"],
+    "focus_tokens": ["\"a", "yy", "p"],
+    "rule": "Use named registers when you need to preserve text beyond one operation.",
+    "initial": {
+      "buffers": [{"name": "copy.txt", "lines": ["alpha", "omega"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["alpha", "omega", "alpha"],
+      "success_text": "You stored text in a named register and reused it later."
+    }
+  },
+  {
+    "id": "quickfix-vimgrep",
+    "module_id": "quickfix",
+    "title": "Quickfix Iterate Matches",
+    "goal": "Run :vimgrep /TODO/ % and jump to the next hit with :cnext.",
+    "explanation": "Quickfix turns global matches into an actionable navigation list.",
+    "hints": ["Start with :vimgrep /TODO/ %.", "Then run :cnext."],
+    "skills": ["quickfix.vimgrep", "quickfix.next"],
+    "commands_learned": [":vimgrep", ":cnext"],
+    "canonical_solutions": [":vimgrep /TODO/ %", ":cnext"],
+    "focus_tokens": [":vimgrep /TODO/ %", ":cnext"],
+    "rule": "Use quickfix when you need to process many search hits efficiently.",
+    "initial": {
+      "buffers": [{"name": "todos.txt", "lines": ["TODO alpha", "noop", "TODO beta"]}]
+    },
+    "check": {
+      "type": "cursor_row_is",
+      "row": 2,
+      "success_text": "You moved through a quickfix result set."
+    }
+  },
+  {
+    "id": "netrw-parent-nav",
+    "module_id": "netrw",
+    "title": "Explorer Parent Navigation",
+    "goal": "Open explorer at /tmp, move to parent with -, then exit with Esc.",
+    "explanation": "Netrw is a lightweight built-in explorer, useful even without plugins.",
+    "hints": ["Use :Explore /tmp.", "Press - to go up.", "Press Esc to close explorer."],
+    "skills": ["netrw.open", "netrw.parent", "netrw.exit"],
+    "commands_learned": [":Explore", "-", "Esc"],
+    "canonical_solutions": [":Explore /tmp", "-", "Esc"],
+    "focus_tokens": [":Explore /tmp", "-", "esc"],
+    "rule": "Know the built-in explorer so you can navigate files even in minimal setups.",
+    "initial": {
+      "buffers": [{"name": "project.txt", "lines": ["root"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "explorer_open_is", "bool_value": false},
+        {"type": "explorer_path_is", "value": "/"},
+        {"type": "mode_is", "mode": "normal"}
+      ],
+      "success_text": "You opened explorer, navigated to parent, and exited cleanly."
+    }
+  },
+  {
+    "id": "ecosystem-plugin-commands",
+    "module_id": "ecosystem",
+    "title": "Plugin Workflow Literacy",
+    "goal": "Run :Lazy sync, then :Mason, then :TSUpdate.",
+    "explanation": "You do not need to memorize one plugin manager, but you should recognize common maintenance flows.",
+    "hints": ["Run :Lazy sync.", "Then :Mason.", "Then :TSUpdate."],
+    "skills": ["plugins.lazy", "plugins.mason", "plugins.treesitter"],
+    "commands_learned": [":Lazy sync", ":Mason", ":TSUpdate"],
+    "canonical_solutions": [":Lazy sync", ":Mason", ":TSUpdate"],
+    "focus_tokens": [":Lazy sync", ":Mason", ":TSUpdate"],
+    "rule": "Operational literacy matters: know what maintenance commands look like and when to run them.",
+    "initial": {
+      "buffers": [{"name": "init.lua", "lines": ["-- plugins"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":Lazy sync", ":Mason", ":TSUpdate"],
+      "success_text": "You ran the core plugin maintenance commands."
+    }
+  },
+  {
+    "id": "lsp-definition-jump",
+    "module_id": "lsp",
+    "title": "LSP Info And Definition Jump",
+    "goal": "Run :LspInfo, then jump to deploy definition with gd.",
+    "explanation": "LSP workflows are anchored by two habits: inspect client state and jump to definitions quickly.",
+    "hints": ["Run :LspInfo first.", "Move cursor over deploy and use gd."],
+    "skills": ["lsp.info", "lsp.definition"],
+    "commands_learned": [":LspInfo", "gd"],
+    "canonical_solutions": [":LspInfo", "gd"],
+    "focus_tokens": [":LspInfo", "gd"],
+    "rule": "Use :LspInfo for diagnosis and gd for core navigation.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["deploy()", "func deploy() {}", "func other() {}"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "command_includes", "commands": [":LspInfo"]},
+        {"type": "cursor_row_is", "row": 1}
+      ],
+      "success_text": "You inspected LSP status and jumped to a definition."
+    }
+  },
+  {
+    "id": "telescope-pickers",
+    "module_id": "telescope",
+    "title": "Telescope Picker Basics",
+    "goal": "Open :Telescope find_files, exit with Esc, then run :Telescope buffers.",
+    "explanation": "Telescope pickers are fast entry points for file, text, and buffer navigation.",
+    "hints": ["Start with :Telescope find_files.", "Press Esc to close picker/explorer mode.", "Run :Telescope buffers."],
+    "skills": ["telescope.files", "telescope.buffers"],
+    "commands_learned": [":Telescope find_files", ":Telescope buffers"],
+    "canonical_solutions": [":Telescope find_files", "Esc", ":Telescope buffers"],
+    "focus_tokens": [":Telescope find_files", ":Telescope buffers"],
+    "rule": "Treat pickers as command interfaces for navigation, not just UI widgets.",
+    "initial": {
+      "buffers": [{"name": "app.lua", "lines": ["print('hi')"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":Telescope find_files", ":Telescope buffers"],
+      "success_text": "You used two common Telescope pickers in sequence."
+    }
+  },
+  {
+    "id": "safety-recovery-flow",
+    "module_id": "safety",
+    "title": "Safety And Recovery Commands",
+    "goal": "Run :wa, then :qa!, then :recover.",
+    "explanation": "Safe editing includes understanding global write, force quit, and recovery flows.",
+    "hints": ["Use :wa first.", "Then :qa!.", "Then run :recover."],
+    "skills": ["safety.writeall", "safety.forcequit", "safety.recover"],
+    "commands_learned": [":wa", ":qa!", ":recover"],
+    "canonical_solutions": [":wa", ":qa!", ":recover"],
+    "focus_tokens": [":wa", ":qa!", ":recover"],
+    "rule": "Know the safety commands before you need them in a stressful situation.",
+    "initial": {
+      "buffers": [{"name": "notes.txt", "lines": ["draft"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":wa", ":qa!", ":recover"],
+      "success_text": "You practiced the core safety and recovery commands."
+    }
+  },
+  {
+    "id": "performance-profile",
+    "module_id": "performance",
+    "title": "Profile And Inspect",
+    "goal": "Start profiling, stop profiling, then inspect script load order with :scriptnames.",
+    "explanation": "Performance debugging starts with collecting profile data and inspecting runtime context.",
+    "hints": ["Use :profile start /tmp/vim.prof.", "Then :profile stop.", "Then :scriptnames."],
+    "skills": ["debug.profile", "debug.scriptnames"],
+    "commands_learned": [":profile start", ":profile stop", ":scriptnames"],
+    "canonical_solutions": [":profile start /tmp/vim.prof", ":profile stop", ":scriptnames"],
+    "focus_tokens": [":profile start /tmp/vim.prof", ":profile stop", ":scriptnames"],
+    "rule": "Measure first, then inspect runtime context before making performance changes.",
+    "initial": {
+      "buffers": [{"name": "init.vim", "lines": ["set number"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "profile_active_is", "bool_value": false},
+        {"type": "command_includes", "commands": [":scriptnames"]}
+      ],
+      "success_text": "You started and stopped profiling, then inspected script loading."
+    }
+  },
+  {
+    "id": "indent-line",
+    "module_id": "indent",
+    "title": "Indent A Line",
+    "goal": "Indent the second line with `>>`, then outdent it back with `<<`.",
+    "explanation": "`>>` shifts the current line right by one indent unit. `<<` shifts left. They're operator-style commands that respect counts (e.g. `3>>`).",
+    "hints": ["Move down to the second line with j.", "Press > twice to indent.", "Press < twice to outdent."],
+    "skills": ["indent.line"],
+    "commands_learned": [">>", "<<"],
+    "canonical_solutions": ["j>><<"],
+    "focus_tokens": [">>", "<<"],
+    "rule": "Use >> / << to nudge a single line in or out by one shift width.",
+    "initial": {
+      "buffers": [{"name": "block.txt", "lines": ["top", "middle", "bottom"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["top", "middle", "bottom"],
+      "success_text": "You indented and then outdented the line back to its starting column."
+    }
+  },
+  {
+    "id": "indent-visual",
+    "module_id": "indent",
+    "title": "Indent A Visual Block",
+    "goal": "Select all three lines with `V` then `2j`, then indent them with `>`.",
+    "explanation": "In linewise visual mode, > and < shift every selected line by one indent unit at once.",
+    "hints": ["Press V to enter visual-line mode.", "Press 2j to extend the selection to the third line.", "Press > to indent the whole selection."],
+    "skills": ["indent.visual", "visual.line"],
+    "commands_learned": ["V", ">"],
+    "canonical_solutions": ["V2j>"],
+    "focus_tokens": ["V", ">"],
+    "rule": "Visual selections turn shift commands into bulk indents.",
+    "initial": {
+      "buffers": [{"name": "block.txt", "lines": ["alpha", "beta", "gamma"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["  alpha", "  beta", "  gamma"],
+      "success_text": "You used a visual-line selection to indent multiple lines in one stroke."
+    }
+  },
+  {
+    "id": "insert-ctrlw-ctrlu",
+    "module_id": "inserttricks",
+    "title": "Delete By Word And Line In Insert",
+    "goal": "From Insert mode, use `<C-w>` to delete a word backward, then `<C-u>` to clear the rest of the line.",
+    "explanation": "Inside Insert mode, <C-w> deletes the previous word and <C-u> deletes from the cursor back to the start of the line. Both save you from leaving Insert just to fix a typo.",
+    "hints": ["You start in Insert mode at the end of a draft line.", "Press <C-w> to remove the trailing word.", "Press <C-u> to clear the line from the cursor to its start."],
+    "skills": ["insert.ctrlw", "insert.ctrlu"],
+    "commands_learned": ["<C-w>", "<C-u>"],
+    "canonical_solutions": ["ctrl+w ctrl+u"],
+    "focus_tokens": ["<C-w>", "<C-u>"],
+    "rule": "Insert-mode line/word deletes mean you don't have to bounce back to Normal for small fixes.",
+    "initial": {
+      "buffers": [{"name": "draft.txt", "lines": ["hello world"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 11}],
+      "starting_mode": "insert"
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [""],
+      "success_text": "You used <C-w> and <C-u> to clear the line without leaving Insert mode."
+    }
+  },
+  {
+    "id": "insert-ctrlo",
+    "module_id": "inserttricks",
+    "title": "One Normal Command In Insert",
+    "goal": "From Insert mode, use `<C-o>` followed by `dw` to delete the word ahead, all without exiting Insert.",
+    "explanation": "<C-o> lets you run a single Normal-mode command and bounce straight back to Insert. Perfect when you need a quick fix mid-typing.",
+    "hints": ["You start in Insert mode at the start of `replace me now`.", "Press <C-o>, then dw to delete the next word.", "You stay in Insert mode after — no Esc needed."],
+    "skills": ["insert.ctrlo"],
+    "commands_learned": ["<C-o>"],
+    "canonical_solutions": ["ctrl+o dw"],
+    "focus_tokens": ["<C-o>"],
+    "rule": "<C-o> is your escape hatch from Insert mode that doesn't actually leave Insert mode.",
+    "initial": {
+      "buffers": [{"name": "phrase.txt", "lines": ["replace me now"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}],
+      "starting_mode": "insert"
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "mode_is", "mode": "insert"},
+        {"type": "buffer_equals", "buffer": ["me now"]}
+      ],
+      "success_text": "You ran a Normal-mode delete from inside Insert mode and stayed there."
+    }
+  },
+  {
+    "id": "exranges-delete",
+    "module_id": "exranges",
+    "title": "Delete A Line Range",
+    "goal": "Delete lines 2 through 4 with `:2,4d`.",
+    "explanation": "Ex commands accept ranges as a prefix: a single number, a comma-separated pair, `%` for the whole buffer, or `.` and `$` for current and last.",
+    "hints": ["Run :2,4d and press Enter.", "Lines 2 through 4 disappear in one shot."],
+    "skills": ["commandline.range", "commandline.delete"],
+    "commands_learned": [":2,4d"],
+    "canonical_solutions": [":2,4d"],
+    "focus_tokens": [":2,4d"],
+    "rule": "Ranges turn a single ex command into bulk action without macros or visual selection.",
+    "initial": {
+      "buffers": [{"name": "lines.txt", "lines": ["keep one", "drop two", "drop three", "drop four", "keep five"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["keep one", "keep five"],
+      "success_text": "You used a numeric range to delete a slice of the buffer."
+    }
+  },
+  {
+    "id": "refactor-cgn-dot",
+    "module_id": "refactor",
+    "title": "Rename With cgn And Dot",
+    "goal": "Rename every `foo` to `bar` using `/foo`, `cgn`, then `.`.",
+    "explanation": "`cgn` changes the next search match. `.` repeats that change. Together they're the canonical Vim refactor: search once, change once, repeat.",
+    "hints": ["Search forward with /foo then Enter.", "Use cgn, type bar, press Esc — you've replaced one match.", "Press . to repeat the change on the next match.", "Repeat . until every foo is gone."],
+    "skills": ["refactor.cgn", "repeat.dot", "search.forward"],
+    "commands_learned": ["/foo", "cgn", "."],
+    "canonical_solutions": ["/foo Enter cgnbar Esc .."],
+    "focus_tokens": ["/foo", "cgn", "."],
+    "rule": "Search once, change once with cgn, then dot-repeat across the file.",
+    "initial": {
+      "buffers": [{"name": "rename.go", "lines": ["alpha foo", "beta foo", "gamma foo"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "buffer_equals", "buffer": ["alpha bar", "beta bar", "gamma bar"]},
+        {"type": "mode_is", "mode": "normal"}
+      ],
+      "success_text": "You renamed every match by combining cgn with dot-repeat — the heart of Vim refactoring."
+    }
+  },
+  {
+    "id": "refactor-macro-quickfix",
+    "module_id": "refactor",
+    "title": "Macro Across A Quickfix List",
+    "goal": "Record a macro that turns `TODO` into `DONE`, populate quickfix with `:vimgrep /TODO/ %`, then run the macro on each match.",
+    "explanation": "Macros + quickfix is the move that makes Vim feel limitless. Record once on the first match, vimgrep the rest, and replay across the list.",
+    "hints": ["Start on the first TODO at row 0.", "Record a macro: qa, then cwDONE Esc, then q to stop.", "Run :vimgrep /TODO/ % to populate quickfix.", "Use :cnext to jump to the next match, then @a to replay the macro. Repeat until all TODOs are DONE."],
+    "skills": ["macros.record", "macros.play", "quickfix.vimgrep", "quickfix.next", "refactor.macro_quickfix"],
+    "commands_learned": ["qa", "cw", "@a", ":vimgrep", ":cnext"],
+    "canonical_solutions": ["qa cwDONE Esc q :vimgrep /TODO/ % Enter :cnext Enter @a :cnext Enter @a"],
+    "focus_tokens": ["qa", "@a", ":vimgrep /TODO/ %", ":cnext"],
+    "rule": "Record the transform once, navigate matches with quickfix, replay the macro on every hit.",
+    "initial": {
+      "buffers": [{"name": "tasks.txt", "lines": ["TODO docs", "ship", "TODO tests", "TODO deploy"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "buffer_equals", "buffer": ["DONE docs", "ship", "DONE tests", "DONE deploy"]},
+        {"type": "mode_is", "mode": "normal"}
+      ],
+      "success_text": "You combined a recorded macro with a quickfix list to apply the same edit across every match."
+    }
+  }
+]

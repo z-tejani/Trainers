@@ -1,0 +1,697 @@
+[
+  {
+    "id": "macros-replay-last",
+    "module_id": "macrosadv",
+    "title": "Replay The Last Macro",
+    "goal": "Record macro a that deletes a #, then use `@@` to repeat it without retyping the register.",
+    "explanation": "`@@` replays the most recently used `@<reg>`. Once you've run a macro once, you can keep applying it across the file with a single keystroke.",
+    "hints": ["Record qa: x q.", "Move down with j and run @a.", "Move down again and run @@."],
+    "skills": ["macros.record", "macros.play", "macros.replay_last"],
+    "commands_learned": ["qa", "@a", "@@"],
+    "canonical_solutions": ["qaxqj@aj@@"],
+    "focus_tokens": ["@@"],
+    "rule": "@@ replays the last @<reg>; cheaper than retyping the register name on every line.",
+    "initial": {
+      "buffers": [{"name": "todo.txt", "lines": ["# alpha", "# beta", "# gamma"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [" alpha", " beta", " gamma"],
+      "success_text": "You recorded once, ran @a, then @@ — fewer keystrokes per line."
+    }
+  },
+  {
+    "id": "macros-append-capital",
+    "module_id": "macrosadv",
+    "title": "Append To A Macro With qA",
+    "goal": "Record `qa` deleting `#`, then append `qA` adding ` done` so the playback now does both steps.",
+    "explanation": "Capital register names append to the matching lowercase macro. Use it to extend a macro without re-recording from scratch.",
+    "hints": ["Record qa: x q.", "Now record qA appending: A done<Esc> q.", "Move to the next line and run @a once — both steps fire in sequence."],
+    "skills": ["macros.append"],
+    "commands_learned": ["qA"],
+    "canonical_solutions": ["qaxqqAA done Esc qj@a"],
+    "focus_tokens": ["qA", "@a"],
+    "rule": "qA continues building register a — capital = append, lowercase = overwrite.",
+    "initial": {
+      "buffers": [{"name": "tasks.txt", "lines": ["# alpha", "# beta"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [" alpha done", " beta done"],
+      "success_text": "You extended an existing macro using qA without re-recording the original delete."
+    }
+  },
+  {
+    "id": "macros-counted",
+    "module_id": "macrosadv",
+    "title": "Counted Macros",
+    "goal": "Record `qa` deleting a `#`, then run `3@a` to fire the macro across three lines.",
+    "explanation": "Prefixing `@a` with a count runs the macro that many times. Beats holding @ down or scripting a loop.",
+    "hints": ["Record qa: x q.", "Move down with j.", "Run 3@a — macro repeats three times."],
+    "skills": ["macros.counted"],
+    "commands_learned": ["3@a"],
+    "canonical_solutions": ["qaxqj3@a"],
+    "focus_tokens": ["3@a"],
+    "rule": "Count @<reg> like any motion — predictable and explicit.",
+    "initial": {
+      "buffers": [{"name": "todo.txt", "lines": ["# one", "# two", "# three", "# four"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [" one", " two", " three", " four"],
+      "success_text": "You replayed a macro three times in one expression."
+    }
+  },
+  {
+    "id": "macros-normal-range",
+    "module_id": "macrosadv",
+    "title": "Run Normal Keys Over A Range",
+    "goal": "Use `:%normal A!` to append `!` to every line in the buffer.",
+    "explanation": "`:[range]normal keys` runs the keys against each line of the range. Combined with `%`, it operates on the whole buffer in one ex command.",
+    "hints": ["Type :%normal A!<Enter>.", "Each line gets ! appended."],
+    "skills": ["macros.normal_range", "commandline.range"],
+    "commands_learned": [":%normal A!"],
+    "canonical_solutions": [":%normal A! Enter"],
+    "focus_tokens": [":%normal A!"],
+    "rule": ":[range]normal scales any normal-mode chord to a range without recording a macro.",
+    "initial": {
+      "buffers": [{"name": "phrases.txt", "lines": ["alpha", "beta", "gamma"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["alpha!", "beta!", "gamma!"],
+      "success_text": "You ran an append across every line with a single :normal command."
+    }
+  },
+  {
+    "id": "marks-global",
+    "module_id": "marksadv",
+    "title": "Global Marks Across Buffers",
+    "goal": "Set mark `A` in main.go, switch to README.md, then jump back with `'A`.",
+    "explanation": "Capital marks (A–Z) remember which buffer they live in. `'A` jumps across buffers; lowercase marks stay local.",
+    "hints": [
+      "Press mA to set mark A on main.go.",
+      "Run :e README.md to switch buffers.",
+      "Press 'A — Vim jumps back to main.go where you set the mark."
+    ],
+    "skills": ["marks.global", "buffers.open"],
+    "commands_learned": ["mA", "'A"],
+    "canonical_solutions": ["mA :e README.md Enter 'A"],
+    "focus_tokens": ["mA", "'A"],
+    "rule": "Capital marks span buffers; reach for them when you need to bookmark across files.",
+    "initial": {
+      "buffers": [
+        {"name": "main.go", "lines": ["package main"]},
+        {"name": "README.md", "lines": ["# Docs"]}
+      ],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "active_buffer_name_is", "buffer_name": "main.go"},
+        {"type": "mark_set", "mapping": "A"}
+      ],
+      "success_text": "You set a global mark, switched buffers, and jumped back across files with 'A."
+    }
+  },
+  {
+    "id": "marks-auto-last-change",
+    "module_id": "marksadv",
+    "title": "Jump To The Last Change With '.",
+    "goal": "Make a change far from the start of the file, jump to the top with `gg`, then return to the change with `'.`.",
+    "explanation": "`'.` is the auto-mark for your last edit. After roaming, it brings you straight back to the line you just touched.",
+    "hints": [
+      "Move down to the second line with j and delete the character with x.",
+      "Press gg to jump to the top.",
+      "Press '. to bounce back to the line you just edited."
+    ],
+    "skills": ["marks.auto"],
+    "commands_learned": ["'."],
+    "canonical_solutions": ["jxgg'."],
+    "focus_tokens": ["'."],
+    "rule": "'. is the unsung hero of \"where was I\" navigation.",
+    "initial": {
+      "buffers": [{"name": "notes.txt", "lines": ["alpha", "beta", "gamma"]}]
+    },
+    "check": {
+      "type": "cursor_row_is",
+      "row": 1,
+      "success_text": "You used the auto-mark '. to bounce back to the location of your last change."
+    }
+  },
+  {
+    "id": "marks-list-and-delete",
+    "module_id": "marksadv",
+    "title": "List And Drop Marks",
+    "goal": "Set marks `a` and `b`, list them with `:marks`, then drop them with `:delmarks!`.",
+    "explanation": "`:marks` shows every mark, `:delmarks a-c` drops a range, `:delmarks!` clears them all. Useful housekeeping.",
+    "hints": [
+      "Press ma on the first line, then jb on the second and mb.",
+      "Run :marks to see them listed.",
+      "Run :delmarks! to drop everything."
+    ],
+    "skills": ["marks.list", "marks.delete"],
+    "commands_learned": [":marks", ":delmarks!"],
+    "canonical_solutions": ["majmb :marks Enter :delmarks! Enter"],
+    "focus_tokens": [":marks", ":delmarks!"],
+    "rule": "Treat marks as state; clean them up the same way you'd clear stale registers.",
+    "initial": {
+      "buffers": [{"name": "notes.txt", "lines": ["alpha", "beta"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":marks", ":delmarks!"],
+      "success_text": "You listed the marks you set and then nuked them in one command."
+    }
+  },
+  {
+    "id": "registers-blackhole",
+    "module_id": "registersadv",
+    "title": "Delete Without Clobbering Yank",
+    "goal": "Yank line 1, delete line 2 into the black hole register `\"_`, then paste — the original yank survives.",
+    "explanation": "`\"_` is the black hole. Operations targeting it discard the data instead of overwriting your unnamed register.",
+    "hints": ["Press yy to yank `keep me`.", "Move down with j and run \"_dd to drop the second line into nowhere.", "Press p — the yanked text is still there."],
+    "skills": ["registers.blackhole"],
+    "commands_learned": ["\"_dd"],
+    "canonical_solutions": ["yyj\"_ddp"],
+    "focus_tokens": ["\"_"],
+    "rule": "Reach for \"_ whenever a delete would otherwise stomp a yank you still need.",
+    "initial": {
+      "buffers": [{"name": "lines.txt", "lines": ["keep me", "DROP THIS"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["keep me", "keep me"],
+      "success_text": "You used the black hole register to delete without touching the yanked text."
+    }
+  },
+  {
+    "id": "registers-numbered-ring",
+    "module_id": "registersadv",
+    "title": "The Numbered Delete Ring",
+    "goal": "Delete two whole lines, then paste the older one with `\"2p`.",
+    "explanation": "Multi-line deletes shift through `\"1`–`\"9`. The most recent is in `\"1`; the previous in `\"2`; and so on.",
+    "hints": ["Run dd twice to push two lines into the ring.", "Run \"2p to paste the older delete back."],
+    "skills": ["registers.numbered_ring"],
+    "commands_learned": ["\"2p"],
+    "canonical_solutions": ["dddd\"2p"],
+    "focus_tokens": ["\"2p"],
+    "rule": "\"1 is freshest; \"2 the one before; the ring saves you when you've yanked over your data.",
+    "initial": {
+      "buffers": [{"name": "lines.txt", "lines": ["one", "two", "three"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["three", "one"],
+      "success_text": "You recovered an older delete from the numbered register ring."
+    }
+  },
+  {
+    "id": "registers-special-search",
+    "module_id": "registersadv",
+    "title": "Paste The Last Search With \"/p",
+    "goal": "Search for `deploy`, then paste the search pattern into the buffer with `\"/p`.",
+    "explanation": "`\"/` holds your last search pattern. Pasting it lets you reuse a regex without retyping. `\":` holds the last command, `\".\"` the last insert, `\"%` the filename.",
+    "hints": ["Run /deploy and Enter.", "Press \"/p — `deploy` lands in the buffer."],
+    "skills": ["registers.special"],
+    "commands_learned": ["\"/p"],
+    "canonical_solutions": ["/deploy Enter \"/p"],
+    "focus_tokens": ["\"/p"],
+    "rule": "Special registers expose the editor's recent state — search, command, insert, filename — read-only.",
+    "initial": {
+      "buffers": [{"name": "log.txt", "lines": ["deploy staging"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "last_search_is", "value": "deploy"},
+        {"type": "buffer_equals", "buffer": ["ddeployeploy staging"]}
+      ],
+      "success_text": "You pasted the last search pattern back into the buffer via the special register \"/."
+    }
+  },
+  {
+    "id": "registers-insert-ctrlr",
+    "module_id": "registersadv",
+    "title": "Paste A Register From Insert",
+    "goal": "From Insert mode, use `<C-r>0` to paste the last yank without leaving Insert.",
+    "explanation": "`<C-r><reg>` pastes register contents directly into the cmdline or Insert mode — no Esc / p / i dance.",
+    "hints": ["Press yiw on the first word.", "Move to the empty placeholder line and press i to enter Insert mode.", "Press <C-r>0 — the yanked word lands at the cursor."],
+    "skills": ["registers.insert_paste"],
+    "commands_learned": ["<C-r>0"],
+    "canonical_solutions": ["yiwjA ctrl+r 0 Esc"],
+    "focus_tokens": ["<C-r>0"],
+    "rule": "<C-r> in Insert mode is the bridge that keeps you typing instead of bouncing through Normal.",
+    "initial": {
+      "buffers": [{"name": "phrase.txt", "lines": ["hello", "say "]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["hello", "say hello"],
+      "success_text": "You pasted a register straight into Insert mode with <C-r>0."
+    }
+  },
+  {
+    "id": "shell-bang",
+    "module_id": "shellintegration",
+    "title": "Run A Shell Command",
+    "goal": "Run `:!ls` to list the open buffers (the trainer simulates the shell output).",
+    "explanation": "`:!cmd` shells out. The trainer doesn't fork a real subprocess — it returns shaped fake output so lessons stay reproducible — but the muscle memory is identical.",
+    "hints": ["Type :!ls and press Enter.", "Watch the simulated output appear in the echo line."],
+    "skills": ["shell.bang"],
+    "commands_learned": [":!ls"],
+    "canonical_solutions": [":!ls Enter"],
+    "focus_tokens": [":!ls"],
+    "rule": "Use :! for one-off shell calls without leaving Vim.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":!ls"],
+      "success_text": "You shelled out and saw simulated output land in the trainer's echo line."
+    }
+  },
+  {
+    "id": "shell-read",
+    "module_id": "shellintegration",
+    "title": "Read Command Output Into The Buffer",
+    "goal": "Use `:r !date` to insert a timestamp line below the cursor.",
+    "explanation": "`:r !cmd` runs cmd and inserts its stdout below the cursor. Great for stamping dates, generated content, or fixture data.",
+    "hints": ["Type :r !date and press Enter.", "A simulated date line appears below the cursor."],
+    "skills": ["shell.read"],
+    "commands_learned": [":r !date"],
+    "canonical_solutions": [":r !date Enter"],
+    "focus_tokens": [":r !date"],
+    "rule": ":r !cmd is the bridge between scripted output and your buffer.",
+    "initial": {
+      "buffers": [{"name": "stamp.txt", "lines": ["before"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["before", "Sat Jan 1 12:00:00 UTC 2000"],
+      "success_text": "You inserted shell output directly into the buffer with :r !cmd."
+    }
+  },
+  {
+    "id": "shell-make",
+    "module_id": "shellintegration",
+    "title": "Run :make And Iterate Errors",
+    "goal": "Run `:make` to populate quickfix, then `:cnext` to navigate the synthesized error.",
+    "explanation": "`:make` runs `makeprg` and parses output through `errorformat` into the quickfix list. The trainer fakes the build but the workflow is identical to the real thing.",
+    "hints": ["Run :make and press Enter — quickfix gets a synthetic error.", "Run :cnext to jump to it."],
+    "skills": ["shell.make", "quickfix.next"],
+    "commands_learned": [":make", ":cnext"],
+    "canonical_solutions": [":make Enter :cnext Enter"],
+    "focus_tokens": [":make", ":cnext"],
+    "rule": "Edit → :make → :cnext is the loop that keeps you out of a separate terminal.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":make", ":cnext"],
+      "success_text": "You ran the trainer's :make pipeline and iterated through the resulting quickfix."
+    }
+  },
+  {
+    "id": "config-leader",
+    "module_id": "configwalkthrough",
+    "title": "Set The Leader Key",
+    "goal": "Set the leader to space with `:let mapleader = \" \"`.",
+    "explanation": "Leader is a placeholder for `<leader>` in mappings — typically space or comma. Pick early; mappings reference it.",
+    "hints": ["Run :let mapleader = \" \" and press Enter."],
+    "skills": ["config.leader"],
+    "commands_learned": [":let mapleader = \" \""],
+    "canonical_solutions": [":let mapleader = \" \" Enter"],
+    "focus_tokens": [":let mapleader = \" \""],
+    "rule": "Pick a leader (space is popular) before authoring mappings.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" config"]}]
+    },
+    "check": {
+      "type": "variable_equals",
+      "variable": "mapleader",
+      "value": " ",
+      "success_text": "Leader is now space; <leader>w and friends are ready to be mapped."
+    }
+  },
+  {
+    "id": "config-indent",
+    "module_id": "configwalkthrough",
+    "title": "Configure Indentation",
+    "goal": "Set `tabstop=2`, `shiftwidth=2`, and turn on `expandtab` in one :set.",
+    "explanation": "Tabstop is how wide a real tab renders; shiftwidth is what `>>` uses; expandtab turns Tab presses into spaces. Most modern setups use 2 or 4 of each.",
+    "hints": ["Run :set tabstop=2 shiftwidth=2 expandtab and press Enter."],
+    "skills": ["config.indent"],
+    "commands_learned": [":set tabstop=2 shiftwidth=2 expandtab"],
+    "canonical_solutions": [":set tabstop=2 shiftwidth=2 expandtab Enter"],
+    "focus_tokens": [":set tabstop=2 shiftwidth=2 expandtab"],
+    "rule": "Set the trio together — tabstop, shiftwidth, expandtab — to avoid mixed indents.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" indent"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "option_int_is", "option": "tabstop", "count": 2},
+        {"type": "option_int_is", "option": "shiftwidth", "count": 2},
+        {"type": "bool_option_is", "option": "expandtab", "bool_value": true}
+      ],
+      "success_text": "Indentation is now consistent — Tab inserts two spaces, and >> shifts by two."
+    }
+  },
+  {
+    "id": "config-clipboard",
+    "module_id": "configwalkthrough",
+    "title": "Use The System Clipboard",
+    "goal": "Run `:set clipboard=unnamedplus` so yank/paste route through the system clipboard.",
+    "explanation": "By default Vim's registers are isolated. `clipboard=unnamedplus` makes the unnamed register alias `\"+` (the system clipboard) on most Linux/macOS setups.",
+    "hints": ["Run :set clipboard=unnamedplus and Enter."],
+    "skills": ["config.clipboard"],
+    "commands_learned": [":set clipboard=unnamedplus"],
+    "canonical_solutions": [":set clipboard=unnamedplus Enter"],
+    "focus_tokens": [":set clipboard=unnamedplus"],
+    "rule": "Wire clipboard once at startup; the rest of yank/paste \"just works.\"",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" clipboard"]}]
+    },
+    "check": {
+      "type": "option_string_is",
+      "option": "clipboard",
+      "value": "unnamedplus",
+      "success_text": "Yank/paste now sync with the system clipboard."
+    }
+  },
+  {
+    "id": "config-splits",
+    "module_id": "configwalkthrough",
+    "title": "Split Direction Defaults",
+    "goal": "Set `splitbelow` and `splitright` so new splits open in the natural direction.",
+    "explanation": "By default, `:split` opens above and `:vsplit` opens left. Most users invert that with these two options.",
+    "hints": ["Run :set splitbelow splitright and Enter."],
+    "skills": ["config.splits"],
+    "commands_learned": [":set splitbelow splitright"],
+    "canonical_solutions": [":set splitbelow splitright Enter"],
+    "focus_tokens": [":set splitbelow splitright"],
+    "rule": "Splits should open *toward* you, not away from you.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" splits"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "bool_option_is", "option": "splitbelow", "bool_value": true},
+        {"type": "bool_option_is", "option": "splitright", "bool_value": true}
+      ],
+      "success_text": "New splits will now open in the direction you naturally read."
+    }
+  },
+  {
+    "id": "config-undo-and-display",
+    "module_id": "configwalkthrough",
+    "title": "Persistent Undo And Display",
+    "goal": "Turn on `undofile`, `cursorline`, and `termguicolors`.",
+    "explanation": "`undofile` keeps undo history across editor restarts. `cursorline` highlights the current line. `termguicolors` enables true color in modern terminals.",
+    "hints": ["Run :set undofile cursorline termguicolors and Enter."],
+    "skills": ["config.undo", "config.display"],
+    "commands_learned": [":set undofile cursorline termguicolors"],
+    "canonical_solutions": [":set undofile cursorline termguicolors Enter"],
+    "focus_tokens": [":set undofile cursorline termguicolors"],
+    "rule": "Persistent undo + cursorline + termguicolors is the modern-Vim baseline.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" display"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "bool_option_is", "option": "undofile", "bool_value": true},
+        {"type": "bool_option_is", "option": "cursorline", "bool_value": true},
+        {"type": "bool_option_is", "option": "termguicolors", "bool_value": true}
+      ],
+      "success_text": "Vim now feels like a modern editor — durable undo, visible cursor line, true color."
+    }
+  },
+  {
+    "id": "exdeep-sort",
+    "module_id": "exdeep",
+    "title": "Sort The Buffer",
+    "goal": "Run `:sort u` to sort lines alphabetically and drop duplicates.",
+    "explanation": "`:sort` sorts lines. The `u` flag de-duplicates; `n` sorts numerically.",
+    "hints": ["Run :sort u and press Enter."],
+    "skills": ["ex.sort"],
+    "commands_learned": [":sort u"],
+    "canonical_solutions": [":sort u Enter"],
+    "focus_tokens": [":sort u"],
+    "rule": ":sort u is faster than piping through `sort -u` — and stays inside Vim.",
+    "initial": {
+      "buffers": [{"name": "list.txt", "lines": ["banana", "apple", "banana", "cherry"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["apple", "banana", "cherry"],
+      "success_text": "You sorted and de-duplicated the buffer in one ex command."
+    }
+  },
+  {
+    "id": "exdeep-retab",
+    "module_id": "exdeep",
+    "title": "Retab The Buffer",
+    "goal": "Run `:retab` to convert tabs to spaces using the configured indent.",
+    "explanation": "`:retab` rewrites whitespace using the current shiftwidth / expandtab settings. Useful when pasting code from a tab-using project into a spaces-using one.",
+    "hints": ["Run :retab and press Enter."],
+    "skills": ["ex.retab"],
+    "commands_learned": [":retab"],
+    "canonical_solutions": [":retab Enter"],
+    "focus_tokens": [":retab"],
+    "rule": "Run :retab once after pasting to normalize whitespace; commit the change before editing further.",
+    "initial": {
+      "buffers": [{"name": "code.txt", "lines": ["\talpha", "\tbeta"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["  alpha", "  beta"],
+      "success_text": "Tabs are now spaces consistent with the trainer's indent unit."
+    }
+  },
+  {
+    "id": "exdeep-args-bufdo",
+    "module_id": "exdeep",
+    "title": "Argument List + :bufdo",
+    "goal": "Use `:bufdo %s/foo/bar/g` to run a substitute across every open buffer.",
+    "explanation": "`:bufdo cmd` runs `cmd` against every buffer. `:argdo` does the same against the argument list. Powerful for project-wide refactors when paired with `:s`.",
+    "hints": ["Run :bufdo %s/foo/bar/g and press Enter."],
+    "skills": ["ex.bufdo"],
+    "commands_learned": [":bufdo"],
+    "canonical_solutions": [":bufdo %s/foo/bar/g Enter"],
+    "focus_tokens": [":bufdo"],
+    "rule": "Pair :bufdo with :s when the change has to propagate everywhere.",
+    "initial": {
+      "buffers": [
+        {"name": "a.txt", "lines": ["foo a"]},
+        {"name": "b.txt", "lines": ["foo b"]}
+      ]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":bufdo %s/foo/bar/g"],
+      "success_text": "You ran a substitute across every open buffer in one ex command."
+    }
+  },
+  {
+    "id": "exdeep-altfile",
+    "module_id": "exdeep",
+    "title": "Swap To The Alternate File",
+    "goal": "Open README.md, then bounce back to main.go with `<C-^>`.",
+    "explanation": "`<C-^>` (often labelled `<C-6>` on shifted keyboards) swaps to the alternate buffer — the file you were just in.",
+    "hints": ["Run :e README.md and press Enter.", "Press <C-^> to flip back to main.go."],
+    "skills": ["ex.altfile"],
+    "commands_learned": ["<C-^>"],
+    "canonical_solutions": [":e README.md Enter ctrl+^"],
+    "focus_tokens": ["<C-^>"],
+    "rule": "<C-^> is two-file ping-pong without naming the file each time.",
+    "initial": {
+      "buffers": [
+        {"name": "main.go", "lines": ["package main"]},
+        {"name": "README.md", "lines": ["# Docs"]}
+      ],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "active_buffer_name_is",
+      "buffer_name": "main.go",
+      "success_text": "You swapped to the alternate file and back without retyping a path."
+    }
+  },
+  {
+    "id": "mappings-insert-mode",
+    "module_id": "mappingsdeep",
+    "title": "Map A Key In Insert Mode",
+    "goal": "Run `:inoremap jk <Esc>` so jk acts as Escape in Insert mode.",
+    "explanation": "`:inoremap` registers an Insert-mode mapping. The trainer stores it as data; in real Vim, pressing j followed by k in Insert mode would now exit to Normal.",
+    "hints": ["Run :inoremap jk <Esc> and press Enter."],
+    "skills": ["mappings.insert"],
+    "commands_learned": [":inoremap"],
+    "canonical_solutions": [":inoremap jk <Esc> Enter"],
+    "focus_tokens": [":inoremap jk <Esc>"],
+    "rule": "Mode-specific mappings keep your customizations from leaking outside their context.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" map"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":inoremap jk <Esc>"],
+      "success_text": "You registered an Insert-mode mapping — jk now stands in for Escape."
+    }
+  },
+  {
+    "id": "mappings-user-command",
+    "module_id": "mappingsdeep",
+    "title": "Define A User Command",
+    "goal": "Define `:Greet` with `:command! Greet echo \"hi\"`.",
+    "explanation": "`:command!` registers a user command starting with a capital letter. `-nargs`, `-range`, `-bang` flags shape its argument handling.",
+    "hints": ["Run :command! Greet echo \"hi\" and press Enter."],
+    "skills": ["mappings.command"],
+    "commands_learned": [":command!"],
+    "canonical_solutions": [":command! Greet echo \"hi\" Enter"],
+    "focus_tokens": [":command! Greet"],
+    "rule": "User commands are how your config exposes verbs other tools can call.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" commands"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":command! Greet echo \"hi\""],
+      "success_text": "You registered :Greet — type it and Vim runs your one-liner."
+    }
+  },
+  {
+    "id": "folds-create",
+    "module_id": "foldsdeep",
+    "title": "Create A Manual Fold",
+    "goal": "Use `zfap` to fold the current paragraph.",
+    "explanation": "`zf{motion}` creates a manual fold over the motion's range. `zfap` folds an entire paragraph at once.",
+    "hints": ["Place the cursor inside the first paragraph.", "Press zfap to fold it."],
+    "skills": ["folds.create"],
+    "commands_learned": ["zfap"],
+    "canonical_solutions": ["zfap"],
+    "focus_tokens": ["zfap"],
+    "rule": "zf is an operator: zfap, zfip, zfj all work the same way.",
+    "initial": {
+      "buffers": [
+        {"name": "doc.md", "lines": [
+          "alpha",
+          "beta",
+          "gamma",
+          "",
+          "tail"
+        ]}
+      ],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "fold_count_is",
+      "count": 1,
+      "success_text": "You created a manual fold over the paragraph."
+    }
+  },
+  {
+    "id": "folds-toggle",
+    "module_id": "foldsdeep",
+    "title": "Toggle A Fold With za",
+    "goal": "Create a fold with `zfap`, then toggle it open with `za`.",
+    "explanation": "`za` toggles the fold under the cursor. `zo` always opens; `zc` always closes. Use `za` when you don't care which way it flips.",
+    "hints": ["Press zfap to fold the paragraph.", "Press za to toggle it open."],
+    "skills": ["folds.toggle"],
+    "commands_learned": ["za"],
+    "canonical_solutions": ["zfapza"],
+    "focus_tokens": ["za"],
+    "rule": "za is the everyday fold key; zo / zc are when you need a directional command.",
+    "initial": {
+      "buffers": [
+        {"name": "doc.md", "lines": ["alpha", "beta", "gamma"]}
+      ],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "fold_count_is", "count": 1},
+        {"type": "fold_closed_count_is", "count": 0}
+      ],
+      "success_text": "You created a fold and toggled it back open."
+    }
+  },
+  {
+    "id": "folds-all",
+    "module_id": "foldsdeep",
+    "title": "Open Every Fold",
+    "goal": "After creating two folds, press `zR` to open them all.",
+    "explanation": "`zR` opens every fold; `zM` closes every fold. Useful for switching between focused and overview reading.",
+    "hints": ["Create two folds with zfap on each paragraph.", "Press zR to open everything."],
+    "skills": ["folds.all"],
+    "commands_learned": ["zR"],
+    "canonical_solutions": ["zfap}zfapzR"],
+    "focus_tokens": ["zR"],
+    "rule": "zR / zM are the \"show me everything / hide everything\" pair.",
+    "initial": {
+      "buffers": [
+        {"name": "doc.md", "lines": ["alpha", "", "beta"]}
+      ],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "fold_closed_count_is",
+      "count": 0,
+      "success_text": "Every fold is open — perfect for an overview pass."
+    }
+  },
+  {
+    "id": "spell-toggle",
+    "module_id": "spelldiff",
+    "title": "Toggle Spell Checking",
+    "goal": "Run `:set spell spelllang=en_us` to enable spell-checking with US English.",
+    "explanation": "`:set spell` turns on inline spelling. `spelllang` chooses the dictionary list. The trainer doesn't ship word lists — `]s` and `z=` echo placeholders — but the toggle is real.",
+    "hints": ["Run :set spell spelllang=en_us and Enter."],
+    "skills": ["spell.toggle"],
+    "commands_learned": [":set spell spelllang=en_us"],
+    "canonical_solutions": [":set spell spelllang=en_us Enter"],
+    "focus_tokens": [":set spell spelllang=en_us"],
+    "rule": "Spell-check is a one-line opt-in; pair with :set spelllang to pick a dictionary.",
+    "initial": {
+      "buffers": [{"name": "draft.md", "lines": ["draft"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "bool_option_is", "option": "spell", "bool_value": true},
+        {"type": "option_string_is", "option": "spelllang", "value": "en_us"}
+      ],
+      "success_text": "Spell-check is on with US English."
+    }
+  },
+  {
+    "id": "diff-toggle",
+    "module_id": "spelldiff",
+    "title": "Mark A Window For Diff",
+    "goal": "Run `:diffthis`, then `:diffoff` to leave diff mode.",
+    "explanation": "`:diffthis` marks the current window for diff display. With two windows so marked, Vim color-highlights the differences. `:diffoff` exits.",
+    "hints": ["Run :diffthis and Enter.", "Run :diffoff and Enter."],
+    "skills": ["diff.toggle"],
+    "commands_learned": [":diffthis", ":diffoff"],
+    "canonical_solutions": [":diffthis Enter :diffoff Enter"],
+    "focus_tokens": [":diffthis", ":diffoff"],
+    "rule": "Open two windows, :diffthis on each, and Vim becomes a side-by-side diff viewer.",
+    "initial": {
+      "buffers": [{"name": "draft.txt", "lines": ["alpha"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":diffthis", ":diffoff"],
+      "success_text": "You toggled diff mode on and off without leaving Vim."
+    }
+  }
+]

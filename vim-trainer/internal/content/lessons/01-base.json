@@ -1,0 +1,749 @@
+[
+  {
+    "id": "onboarding-insert",
+    "module_id": "onboarding",
+    "title": "Modal Editing Starts Here",
+    "goal": "Press i, type vim, then press Esc so the line becomes `name = vim`.",
+    "explanation": "Vim starts in Normal mode. You only enter Insert mode when you intend to type text.",
+    "hints": ["Use i to enter Insert mode.", "Type vim.", "Press Esc to return to Normal mode."],
+    "skills": ["modes.normal", "modes.insert", "escape"],
+    "commands_learned": ["i", "Esc"],
+    "canonical_solutions": ["i vim Esc"],
+    "focus_tokens": ["i", "esc"],
+    "rule": "Normal mode is for commands; Insert mode is for typing text.",
+    "common_mistakes": {
+      "v": "You typed text while still in Normal mode. Press i first so Vim knows you want to insert text."
+    },
+    "initial": {
+      "buffers": [{"name": "scratch.txt", "lines": ["name = "]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 7}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "buffer_equals", "buffer": ["name = vim"]},
+        {"type": "mode_is", "mode": "normal"}
+      ],
+      "success_text": "You switched into Insert mode, typed the text, and escaped back to Normal mode."
+    }
+  },
+  {
+    "id": "onboarding-commandline",
+    "module_id": "onboarding",
+    "title": "The Command-Line Prompt",
+    "goal": "Turn on line numbers with :set number.",
+    "explanation": "The : prompt is where Vim options and file commands live.",
+    "hints": ["Press : to open the prompt.", "Type set number and hit Enter."],
+    "skills": ["commandline.open", "options.number"],
+    "commands_learned": [":set number"],
+    "canonical_solutions": [":set number"],
+    "focus_tokens": [":set number"],
+    "rule": "Use the : command-line for editor commands and options.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main", "", "func main() {}"]}]
+    },
+    "check": {
+      "type": "option_is",
+      "option": "number",
+      "bool_value": true,
+      "success_text": "Absolute line numbers are now enabled."
+    }
+  },
+  {
+    "id": "motions-hjkl",
+    "module_id": "motions",
+    "title": "Stay On Home Row",
+    "goal": "Move from the start of alpha to the start of gamma using j then j.",
+    "explanation": "hjkl let you move without leaving the home row.",
+    "hints": ["j moves down one line.", "Use j twice."],
+    "skills": ["motions.hjkl"],
+    "commands_learned": ["h", "j", "k", "l"],
+    "canonical_solutions": ["jj"],
+    "focus_tokens": ["j"],
+    "rule": "Use home-row motions for deliberate, precise cursor movement.",
+    "initial": {
+      "buffers": [{"name": "list.txt", "lines": ["alpha", "beta", "gamma"]}]
+    },
+    "check": {
+      "type": "cursor_at",
+      "row": 2,
+      "col": 0,
+      "success_text": "j moved the cursor down line-by-line."
+    }
+  },
+  {
+    "id": "motions-word",
+    "module_id": "motions",
+    "title": "Move By Word",
+    "goal": "Jump from alpha to gamma using w twice.",
+    "explanation": "Word motions are where Vim starts to feel fast.",
+    "hints": ["w jumps to the start of the next word.", "Use a count like 2w if you prefer."],
+    "skills": ["motions.w", "motions.counts"],
+    "commands_learned": ["w", "2w"],
+    "canonical_solutions": ["ww", "2w"],
+    "focus_tokens": ["w", "2w"],
+    "rule": "Prefer semantic movement like word jumps over repeated single-character steps.",
+    "common_mistakes": {
+      "ll": "Single-character movement works, but this lesson is training word motions. Use w to jump by words."
+    },
+    "initial": {
+      "buffers": [{"name": "words.txt", "lines": ["alpha beta gamma delta"]}]
+    },
+    "check": {
+      "type": "cursor_at",
+      "row": 0,
+      "col": 11,
+      "success_text": "Word motions let you cross larger distances with fewer keys."
+    }
+  },
+  {
+    "id": "motions-anchors",
+    "module_id": "motions",
+    "title": "Counts And Anchors",
+    "goal": "Use 3j to move to the fourth line, then use $ to land on the end of that line.",
+    "explanation": "Counts multiply motions, and anchors jump to structural edges.",
+    "hints": ["Start with 3j.", "Then press $."],
+    "skills": ["motions.counts", "motions.lineend"],
+    "commands_learned": ["3j", "$"],
+    "canonical_solutions": ["3j$"],
+    "focus_tokens": ["3j", "$"],
+    "rule": "Counts and anchors reduce repeated movement and make navigation predictable.",
+    "initial": {
+      "buffers": [{"name": "stack.txt", "lines": ["one", "two", "three", "deploy target"]}]
+    },
+    "check": {
+      "type": "cursor_at",
+      "row": 3,
+      "col": 12,
+      "success_text": "You used a count and a line anchor to land exactly where you wanted."
+    }
+  },
+  {
+    "id": "motions-file",
+    "module_id": "motions",
+    "title": "Jump Across The File",
+    "goal": "Go to the top with gg, then jump to the bottom with G.",
+    "explanation": "File-level jumps matter when you already know the rough location.",
+    "hints": ["Press g twice.", "Then press Shift-g."],
+    "skills": ["motions.gg", "motions.G"],
+    "commands_learned": ["gg", "G"],
+    "canonical_solutions": ["ggG"],
+    "focus_tokens": ["gg", "G"],
+    "rule": "Use gg and G when the destination is at a file boundary.",
+    "initial": {
+      "buffers": [{"name": "files.txt", "lines": ["README.md", "main.go", "go.mod", "go.sum"]}],
+      "windows": [{"buffer": 0, "row": 2, "col": 0}]
+    },
+    "check": {
+      "type": "cursor_row_is",
+      "row": 3,
+      "success_text": "You moved between both file boundaries using Vim's structural jumps."
+    }
+  },
+  {
+    "id": "operators-x",
+    "module_id": "operators",
+    "title": "Delete A Single Character",
+    "goal": "Delete the ! from `build!` using x.",
+    "explanation": "x is the smallest delete command and a good bridge into operators.",
+    "hints": ["The cursor starts on !.", "Press x."],
+    "skills": ["operators.x"],
+    "commands_learned": ["x"],
+    "canonical_solutions": ["x"],
+    "focus_tokens": ["x"],
+    "rule": "Use x when you want to remove exactly the character under the cursor.",
+    "initial": {
+      "buffers": [{"name": "cmd.txt", "lines": ["build!"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 5}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["build"],
+      "success_text": "x removed the character under the cursor."
+    }
+  },
+  {
+    "id": "operators-dw-dd",
+    "module_id": "operators",
+    "title": "Delete With Motions",
+    "goal": "Delete TODO with dw, then delete the remaining line `review` with dd.",
+    "explanation": "Operators become powerful when they combine with motions.",
+    "hints": ["Start on TODO and use dw.", "Then use dd on the next line."],
+    "skills": ["operators.dw", "operators.dd"],
+    "commands_learned": ["dw", "dd"],
+    "canonical_solutions": ["dwjdd"],
+    "focus_tokens": ["dw", "dd"],
+    "rule": "An operator describes what to do; the motion describes where it applies.",
+    "initial": {
+      "buffers": [{"name": "tasks.txt", "lines": ["TODO fix tests", "review", "ship"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["fix tests", "ship"],
+      "success_text": "You used an operator with both a motion and a line target."
+    }
+  },
+  {
+    "id": "operators-cw-d$",
+    "module_id": "operators",
+    "title": "Change And Delete To The End",
+    "goal": "Change draft to ready with cw, then on the next line delete to the end with d$.",
+    "explanation": "c is delete plus Insert mode, while d$ applies an operator to a line anchor.",
+    "hints": ["Start on draft and use cw ready Esc.", "Then move down and use d$ from the start of the line."],
+    "skills": ["operators.cw", "operators.dline"],
+    "commands_learned": ["cw", "d$"],
+    "canonical_solutions": ["cwready Esc jd$"],
+    "focus_tokens": ["cw", "d$"],
+    "rule": "Use c when you want to replace text and d with a motion when you want a precise range.",
+    "initial": {
+      "buffers": [{"name": "status.txt", "lines": ["status = draft", "delete the rest"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 9}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "mode_is", "mode": "normal"},
+        {"type": "buffer_equals", "buffer": ["status = ready", ""]}
+      ],
+      "success_text": "You changed one word and deleted the rest of the next line."
+    }
+  },
+  {
+    "id": "search-repeat",
+    "module_id": "search",
+    "title": "Search And Repeat",
+    "goal": "Search for deploy, jump to the next match with n, then back to the previous match with N.",
+    "explanation": "Search is often the fastest motion in a real file, and n/N make it fluid.",
+    "hints": ["Use /deploy.", "Then press n.", "Then press N."],
+    "skills": ["search.forward", "search.repeat"],
+    "commands_learned": ["/deploy", "n", "N"],
+    "canonical_solutions": ["/deploy Enter n N"],
+    "focus_tokens": ["/deploy", "n", "N"],
+    "rule": "Search establishes a target pattern; n and N traverse that pattern in each direction.",
+    "initial": {
+      "buffers": [{"name": "release.txt", "lines": ["build test", "deploy staging", "deploy production"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "last_search_is", "value": "deploy"},
+        {"type": "cursor_at", "row": 1, "col": 0}
+      ],
+      "success_text": "You searched forward, moved to the next match, then reversed direction with N."
+    }
+  },
+  {
+    "id": "search-star-noh",
+    "module_id": "search",
+    "title": "Search Current Word",
+    "goal": "Use * on deploy, then clear highlights with :noh.",
+    "explanation": "* turns the word under the cursor into your search target.",
+    "hints": ["The cursor starts on deploy.", "Press *.", "Then use :noh."],
+    "skills": ["search.star", "options.noh"],
+    "commands_learned": ["*", ":noh"],
+    "canonical_solutions": ["* :noh"],
+    "focus_tokens": ["*", ":noh"],
+    "rule": "Use * for quick word-based navigation and :noh when highlights are no longer useful.",
+    "initial": {
+      "buffers": [{"name": "ops.txt", "lines": ["deploy staging", "deploy production"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "last_search_is", "value": "deploy"},
+        {"type": "option_is", "option": "hlsearch", "bool_value": false}
+      ],
+      "success_text": "You searched for the word under the cursor and then cleared highlights."
+    }
+  },
+  {
+    "id": "search-marks",
+    "module_id": "search",
+    "title": "Marks Remember Places",
+    "goal": "Set mark a on beta with ma, move to the last line, then jump back with 'a.",
+    "explanation": "Marks are a lightweight way to bookmark locations while you work.",
+    "hints": ["Press ma on beta.", "Move down twice with j.", "Jump back with 'a."],
+    "skills": ["marks.set", "marks.jump"],
+    "commands_learned": ["ma", "'a"],
+    "canonical_solutions": ["majj'a"],
+    "focus_tokens": ["ma", "'a"],
+    "rule": "Set marks before leaving a place you know you will need again.",
+    "initial": {
+      "buffers": [{"name": "notes.txt", "lines": ["alpha", "beta", "gamma", "delta"]}],
+      "windows": [{"buffer": 0, "row": 1, "col": 1}]
+    },
+    "check": {
+      "type": "cursor_at",
+      "row": 1,
+      "col": 0,
+      "success_text": "You bookmarked a location with a mark and returned to it."
+    }
+  },
+  {
+    "id": "editing-openlines",
+    "module_id": "editing",
+    "title": "Open New Lines",
+    "goal": "Use o to open a line below, type second, press Esc, then use O to open a line above and type zero.",
+    "explanation": "o and O create new structure without manual cursor gymnastics.",
+    "hints": ["Press o, type second, Esc.", "Then press O, type zero, Esc."],
+    "skills": ["editing.o", "editing.O"],
+    "commands_learned": ["o", "O"],
+    "canonical_solutions": ["osecond Esc Ozero Esc"],
+    "focus_tokens": ["o", "O"],
+    "rule": "Use o/O when you want new lines without first entering Insert mode manually.",
+    "initial": {
+      "buffers": [{"name": "list.txt", "lines": ["first"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "mode_is", "mode": "normal"},
+        {"type": "buffer_equals", "buffer": ["zero", "first", "second"]}
+      ],
+      "success_text": "You created new lines above and below without leaving the command flow."
+    }
+  },
+  {
+    "id": "editing-undo-redo",
+    "module_id": "editing",
+    "title": "Undo And Redo",
+    "goal": "Delete the ! with x, undo it with u, then redo it with Ctrl-r.",
+    "explanation": "Confident Vim use depends on trusting undo and redo.",
+    "hints": ["Use x.", "Then u.", "Then Ctrl-r."],
+    "skills": ["editing.undo", "editing.redo"],
+    "commands_learned": ["u", "Ctrl-r"],
+    "canonical_solutions": ["x u Ctrl-r"],
+    "focus_tokens": ["x", "u", "<C-r>"],
+    "rule": "Fast editing gets safer when you can confidently reverse and restore changes.",
+    "initial": {
+      "buffers": [{"name": "ping.txt", "lines": ["pong!"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 4}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["pong"],
+      "success_text": "You deleted the character, undid the change, and then redid it."
+    }
+  },
+  {
+    "id": "editing-yank-paste",
+    "module_id": "editing",
+    "title": "Yank And Paste",
+    "goal": "Use yy to yank the current line, then press p to paste a copy below it.",
+    "explanation": "Yank and paste are essential for fast structural edits.",
+    "hints": ["Press y twice to yank the line.", "Press p to paste it below."],
+    "skills": ["editing.yank", "editing.paste"],
+    "commands_learned": ["yy", "p"],
+    "canonical_solutions": ["yyp"],
+    "focus_tokens": ["yy", "p"],
+    "rule": "Use yy to copy a line and p to place it without leaving Normal mode.",
+    "initial": {
+      "buffers": [{"name": "routes.txt", "lines": ["/health", "/users"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["/health", "/health", "/users"],
+      "success_text": "You yanked a full line and pasted it directly below."
+    }
+  },
+  {
+    "id": "textobjects-diw",
+    "module_id": "textobjects",
+    "title": "Inner Word",
+    "goal": "Delete just the word middle with diw so the line becomes `alpha  gamma`.",
+    "explanation": "iw means inner word: the word itself without surrounding whitespace.",
+    "hints": ["Place the cursor on middle.", "Use d then i then w."],
+    "skills": ["textobjects.iw", "textobjects.diw"],
+    "commands_learned": ["iw", "diw"],
+    "canonical_solutions": ["diw"],
+    "focus_tokens": ["diw"],
+    "rule": "Text objects let you target syntactic units instead of counting characters.",
+    "initial": {
+      "buffers": [{"name": "words.txt", "lines": ["alpha middle gamma"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 7}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["alpha  gamma"],
+      "success_text": "diw removed only the inner word, not the adjacent spaces."
+    }
+  },
+  {
+    "id": "textobjects-caw",
+    "module_id": "textobjects",
+    "title": "A Word Includes Space",
+    "goal": "Change beta to core with caw, type core, and press Esc so the line becomes `alpha core gamma`.",
+    "explanation": "aw includes surrounding space, which is useful when you want a clean replacement.",
+    "hints": ["Use caw on beta.", "Type core and press Esc."],
+    "skills": ["textobjects.aw", "textobjects.caw"],
+    "commands_learned": ["aw", "caw"],
+    "canonical_solutions": ["cawcore Esc"],
+    "focus_tokens": ["caw"],
+    "rule": "Use aw when the replacement should cleanly absorb the surrounding spacing.",
+    "initial": {
+      "buffers": [{"name": "phrase.txt", "lines": ["alpha beta gamma"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 6}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "mode_is", "mode": "normal"},
+        {"type": "buffer_equals", "buffer": ["alpha core gamma"]}
+      ],
+      "success_text": "caw replaced the word together with its surrounding spacing."
+    }
+  },
+  {
+    "id": "commandline-options",
+    "module_id": "commandline",
+    "title": "Layer Vim Options",
+    "goal": "Turn on relative numbers with :set relativenumber, then turn on search highlights with :set hlsearch.",
+    "explanation": "Command-line options change how Vim behaves around your editing flow.",
+    "hints": ["Use :set relativenumber.", "Then use :set hlsearch."],
+    "skills": ["options.relativenumber", "options.hlsearch"],
+    "commands_learned": [":set relativenumber", ":set hlsearch"],
+    "canonical_solutions": [":set relativenumber", ":set hlsearch"],
+    "focus_tokens": [":set relativenumber", ":set hlsearch"],
+    "rule": "Use :set to shape the editor around the navigation style you want.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main", "", "func main() {}"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "option_is", "option": "relativenumber", "bool_value": true},
+        {"type": "option_is", "option": "hlsearch", "bool_value": true}
+      ],
+      "success_text": "You enabled both relative numbers and highlighted search matches."
+    }
+  },
+  {
+    "id": "commandline-search-tuning",
+    "module_id": "commandline",
+    "title": "Search Tuning Options",
+    "goal": "Enable smarter search defaults with :set ignorecase smartcase incsearch.",
+    "explanation": "These three options make searching feel better in everyday coding sessions.",
+    "hints": ["Use a single :set command with all three options.", "You can also run them as separate :set commands."],
+    "skills": ["options.ignorecase", "options.smartcase", "options.incsearch"],
+    "commands_learned": [":set ignorecase smartcase incsearch"],
+    "canonical_solutions": [":set ignorecase smartcase incsearch"],
+    "focus_tokens": [":set ignorecase smartcase incsearch"],
+    "rule": "Tune search behavior to reduce friction before it slows you down.",
+    "initial": {
+      "buffers": [{"name": "search.txt", "lines": ["Deploy", "deploy"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "option_is", "option": "ignorecase", "bool_value": true},
+        {"type": "option_is", "option": "smartcase", "bool_value": true},
+        {"type": "option_is", "option": "incsearch", "bool_value": true}
+      ],
+      "success_text": "Search options are now configured for common workflows."
+    }
+  },
+  {
+    "id": "commandline-help-source",
+    "module_id": "commandline",
+    "title": "Help And Source",
+    "goal": "Open help for :set with :help :set, then source your config with :source ~/.vimrc.",
+    "explanation": "Knowing how to access docs and reload config saves time long-term.",
+    "hints": ["Use :help :set first.", "Then use :source ~/.vimrc."],
+    "skills": ["commandline.help", "commandline.source"],
+    "commands_learned": [":help", ":source"],
+    "canonical_solutions": [":help :set", ":source ~/.vimrc"],
+    "focus_tokens": [":help :set", ":source ~/.vimrc"],
+    "rule": "Use :help while learning and :source to apply config changes quickly.",
+    "initial": {
+      "buffers": [{"name": "vimrc", "lines": ["set number"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":help :set", ":source ~/.vimrc"],
+      "success_text": "You used built-in help and simulated a config reload."
+    }
+  },
+  {
+    "id": "commandline-substitute-confirm",
+    "module_id": "commandline",
+    "title": "Substitute With Confirmation",
+    "goal": "Replace every TODO with DONE using `:%s/TODO/DONE/gc`, confirming each match with `y`.",
+    "explanation": "The `c` flag turns substitute into an interactive review: Vim shows each match and waits for y (replace), n (skip), a (apply rest), or q (quit).",
+    "hints": [
+      "Run :%s/TODO/DONE/gc and press Enter.",
+      "Vim will jump to the first TODO and ask whether to replace it.",
+      "Press y to accept each match — or a to apply all the rest at once."
+    ],
+    "skills": ["commandline.substitute", "commandline.confirm", "search.regex"],
+    "commands_learned": [":%s/TODO/DONE/gc"],
+    "canonical_solutions": [":%s/TODO/DONE/gc Enter y y"],
+    "focus_tokens": [":%s/TODO/DONE/gc", "y"],
+    "rule": "Use the c flag when you want substitute to ask before each replacement.",
+    "initial": {
+      "buffers": [{"name": "tasks.txt", "lines": ["TODO docs", "ship", "TODO tests"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "buffer_equals", "buffer": ["DONE docs", "ship", "DONE tests"]},
+        {"type": "mode_is", "mode": "normal"},
+        {"type": "confirm_active_is", "bool_value": false}
+      ],
+      "success_text": "You ran a substitute with the confirm flag and accepted each replacement explicitly."
+    }
+  },
+  {
+    "id": "commandline-sed-filter",
+    "module_id": "commandline",
+    "title": "Run A Sed Filter From Vim",
+    "goal": "Transform TODO to DONE across the whole buffer using :%!sed 's/TODO/DONE/g'.",
+    "explanation": ":%!sed pipes the full buffer through sed, which is useful for bulk transformations.",
+    "hints": ["Use :%!sed 's/TODO/DONE/g'.", "Run it once and inspect the buffer state."],
+    "skills": ["commandline.filter", "commandline.sed"],
+    "commands_learned": [":%!sed"],
+    "canonical_solutions": [":%!sed 's/TODO/DONE/g'"],
+    "focus_tokens": [":%!sed 's/TODO/DONE/g'"],
+    "rule": "Use :%!<cmd> when you want an external filter to rewrite the current buffer.",
+    "initial": {
+      "buffers": [{"name": "tasks.txt", "lines": ["TODO docs", "TODO tests", "ship"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["DONE docs", "DONE tests", "ship"],
+      "success_text": "You applied a sed filter to the full buffer from inside Vim."
+    }
+  },
+  {
+    "id": "commandline-files",
+    "module_id": "commandline",
+    "title": "Open Files And Explorer",
+    "goal": "Open README.md with :e README.md, then open the explorer with :Ex.",
+    "explanation": "The command-line is also where many file-level workflows begin.",
+    "hints": ["Use :e README.md.", "Then use :Ex."],
+    "skills": ["files.edit", "files.explorer"],
+    "commands_learned": [":e", ":Ex"],
+    "canonical_solutions": [":e README.md", ":Ex"],
+    "focus_tokens": [":e README.md", ":Ex"],
+    "rule": "Use :e to move between buffers and :Ex when you want a built-in file browser.",
+    "initial": {
+      "buffers": [
+        {"name": "main.go", "lines": ["package main"]},
+        {"name": "README.md", "lines": ["# Docs"]}
+      ]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "active_buffer_name_is", "buffer_name": "README.md"},
+        {"type": "explorer_open_is", "bool_value": true}
+      ],
+      "success_text": "You switched to another buffer and opened the explorer."
+    }
+  },
+  {
+    "id": "windows-splits",
+    "module_id": "windows",
+    "title": "Split And Cycle Windows",
+    "goal": "Open a split with :split, then cycle to the other window with Ctrl-w w.",
+    "explanation": "Windows let you see multiple views without leaving Vim.",
+    "hints": ["Use :split.", "Then press Ctrl-w followed by w."],
+    "skills": ["windows.split", "windows.cycle"],
+    "commands_learned": [":split", "Ctrl-w w"],
+    "canonical_solutions": [":split", "Ctrl-w w"],
+    "focus_tokens": [":split", "<C-w>w"],
+    "rule": "Window management is a command layer on top of the same buffer data.",
+    "initial": {
+      "buffers": [{"name": "notes.txt", "lines": ["alpha", "beta"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "window_count_is", "count": 2},
+        {"type": "active_window_is", "count": 1}
+      ],
+      "success_text": "You created a second window and moved focus to it."
+    }
+  },
+  {
+    "id": "windows-buffers",
+    "module_id": "windows",
+    "title": "Cycle Buffers",
+    "goal": "Open config.lua with :e config.lua, then move to the next buffer with :bn.",
+    "explanation": "Buffers are open files; windows are views onto those buffers.",
+    "hints": ["Use :e config.lua.", "Then use :bn."],
+    "skills": ["buffers.open", "buffers.next"],
+    "commands_learned": [":e config.lua", ":bn"],
+    "canonical_solutions": [":e config.lua", ":bn"],
+    "focus_tokens": [":e config.lua", ":bn"],
+    "rule": "Use buffer commands when you want to move among open files without changing the window layout.",
+    "initial": {
+      "buffers": [
+        {"name": "main.go", "lines": ["package main"]},
+        {"name": "README.md", "lines": ["# Docs"]},
+        {"name": "config.lua", "lines": ["vim.o.number = true"]}
+      ]
+    },
+    "check": {
+      "type": "active_buffer_name_is",
+      "buffer_name": "main.go",
+      "success_text": "You opened another buffer and then cycled forward through the buffer list."
+    }
+  },
+  {
+    "id": "macros-repeat",
+    "module_id": "macros",
+    "title": "Repeat The Last Change",
+    "goal": "Delete the first # with x, move down with j, then repeat that delete with .",
+    "explanation": ". repeats your last change, which is often faster than recording a full macro.",
+    "hints": ["Press x on the first #.", "Move down with j.", "Press . to repeat the delete."],
+    "skills": ["repeat.dot"],
+    "commands_learned": ["."],
+    "canonical_solutions": ["xj."],
+    "focus_tokens": ["x", "."],
+    "rule": "Reach for . whenever you want to repeat the same edit in a nearby context.",
+    "initial": {
+      "buffers": [{"name": "todo.txt", "lines": ["# one", "# two"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [" one", " two"],
+      "success_text": "You used . to repeat the previous delete without retyping it."
+    }
+  },
+  {
+    "id": "macros-basic",
+    "module_id": "macros",
+    "title": "Record And Replay A Macro",
+    "goal": "Record x into register a with qaxq, move down with j, then replay it with @a.",
+    "explanation": "Macros let you record a sequence of keys and replay it later.",
+    "hints": ["Press q then a to start recording.", "Press x to delete the first #, then q to stop.", "Move down and use @a."],
+    "skills": ["macros.record", "macros.play"],
+    "commands_learned": ["qa...q", "@a"],
+    "canonical_solutions": ["qaxqj@a"],
+    "focus_tokens": ["qa", "@a"],
+    "rule": "Record macros when the same multi-key transformation will happen again.",
+    "initial": {
+      "buffers": [{"name": "todo.txt", "lines": ["# alpha", "# beta"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [" alpha", " beta"],
+      "success_text": "You recorded a macro once and replayed it on the next line."
+    }
+  },
+  {
+    "id": "vimscript-let-echo",
+    "module_id": "vimscript",
+    "title": "Variables And Echo",
+    "goal": "Set g:trainer_level to \"core\" with :let, then print it with :echo g:trainer_level.",
+    "explanation": "Vimscript starts with variables and quick feedback using :echo.",
+    "hints": ["Use :let g:trainer_level = \"core\".", "Then run :echo g:trainer_level."],
+    "skills": ["vimscript.let", "vimscript.echo"],
+    "commands_learned": [":let", ":echo"],
+    "canonical_solutions": [":let g:trainer_level = \"core\"", ":echo g:trainer_level"],
+    "focus_tokens": [":let g:trainer_level = \"core\"", ":echo g:trainer_level"],
+    "rule": "Define a variable with :let and inspect it with :echo while iterating on config.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" training config"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "variable_equals", "variable": "g:trainer_level", "value": "core"},
+        {"type": "last_echo_is", "value": "core"}
+      ],
+      "success_text": "You stored a Vimscript variable and read it back successfully."
+    }
+  },
+  {
+    "id": "vimscript-mapping",
+    "module_id": "vimscript",
+    "title": "Create A Normal-Mode Mapping",
+    "goal": "Add a save mapping with :nnoremap <leader>w :w<CR>, then remove it with :unmap <leader>w.",
+    "explanation": "Mappings are one of the highest-leverage Vim customizations.",
+    "hints": ["Create the mapping first with :nnoremap.", "Then remove it with :unmap."],
+    "skills": ["vimscript.nnoremap", "vimscript.unmap"],
+    "commands_learned": [":nnoremap", ":unmap"],
+    "canonical_solutions": [":nnoremap <leader>w :w<CR>", ":unmap <leader>w"],
+    "focus_tokens": [":nnoremap <leader>w :w<CR>", ":unmap <leader>w"],
+    "rule": "Use non-recursive mappings (`nnoremap`) for predictable key behavior.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" map section"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "command_includes", "commands": [":nnoremap <leader>w :w<CR>", ":unmap <leader>w"]},
+        {"type": "mapping_absent", "mapping": "<leader>w"}
+      ],
+      "success_text": "You created and removed a mapping, which is a common Vimscript workflow."
+    }
+  },
+  {
+    "id": "neovim-checkhealth",
+    "module_id": "neovim",
+    "title": "Check Neovim Health",
+    "goal": "Run :checkhealth to validate your Neovim environment.",
+    "explanation": ":checkhealth is the first command to run when plugins or integrations feel broken.",
+    "hints": ["Open command-line mode and run :checkhealth."],
+    "skills": ["neovim.checkhealth"],
+    "commands_learned": [":checkhealth"],
+    "canonical_solutions": [":checkhealth"],
+    "focus_tokens": [":checkhealth"],
+    "rule": "Start Neovim troubleshooting with health checks before editing config blindly.",
+    "initial": {
+      "buffers": [{"name": "init.lua", "lines": ["vim.o.number = true"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":checkhealth"],
+      "success_text": "You ran Neovim's built-in health checks."
+    }
+  },
+  {
+    "id": "neovim-terminal",
+    "module_id": "neovim",
+    "title": "Use The Built-In Terminal",
+    "goal": "Open Neovim's integrated terminal with :terminal.",
+    "explanation": "Neovim's terminal lets you run shell commands without leaving the editor.",
+    "hints": ["Run :terminal and notice the terminal:// buffer."],
+    "skills": ["neovim.terminal"],
+    "commands_learned": [":terminal"],
+    "canonical_solutions": [":terminal"],
+    "focus_tokens": [":terminal"],
+    "rule": "Integrated terminal workflows reduce context switching for build/test loops.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main"]}]
+    },
+    "check": {
+      "type": "active_buffer_name_has_prefix",
+      "prefix": "terminal://",
+      "success_text": "You opened a terminal buffer from inside Neovim."
+    }
+  },
+  {
+    "id": "neovim-lua-basics",
+    "module_id": "neovim",
+    "title": "Lua Config Basics",
+    "goal": "Set `vim.g.mapleader` with :lua vim.g.mapleader = \" \" then confirm it with :lua print(vim.g.mapleader).",
+    "explanation": "Neovim config is Lua-first, so `:lua` is a core command to understand. Note: the trainer simulates a small Lua subset — `vim.g` assignment, `print(...)`, and `vim.keymap.set(\"n\", ...)`. For full Lua semantics, use Neovim itself.",
+    "hints": ["Assign vim.g.mapleader first.", "Then print it with :lua print(...)."],
+    "skills": ["neovim.lua", "neovim.lua.globals"],
+    "commands_learned": [":lua"],
+    "canonical_solutions": [":lua vim.g.mapleader = \" \"", ":lua print(vim.g.mapleader)"],
+    "focus_tokens": [":lua vim.g.mapleader = \" \"", ":lua print(vim.g.mapleader)"],
+    "rule": "Use :lua for quick config experiments before editing larger Lua files.",
+    "initial": {
+      "buffers": [{"name": "init.lua", "lines": ["-- Neovim config"]}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "variable_equals", "variable": "g:mapleader", "value": " "},
+        {"type": "last_echo_is", "value": " "}
+      ],
+      "success_text": "You set and read a Neovim Lua global successfully."
+    }
+  }
+]

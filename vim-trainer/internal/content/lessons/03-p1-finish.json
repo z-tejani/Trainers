@@ -1,0 +1,209 @@
+[
+  {
+    "id": "tabs-basics",
+    "module_id": "tabs",
+    "title": "Open And Cycle Tab Pages",
+    "goal": "Open a new tab with `:tabnew`, then cycle back with `gT`.",
+    "explanation": "Tab pages group window layouts. `:tabnew` opens a new tab, `gt` advances, `gT` reverses, `:tabclose` drops the current one.",
+    "hints": [
+      "Run :tabnew and press Enter — a fresh tab opens.",
+      "Press gT to move back to the original tab."
+    ],
+    "skills": ["tabs.new", "tabs.cycle"],
+    "commands_learned": [":tabnew", "gT"],
+    "canonical_solutions": [":tabnew Enter gT"],
+    "focus_tokens": [":tabnew", "gT"],
+    "rule": "Use tabs when one window layout doesn't capture what you're doing.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "tab_count_is", "count": 2},
+        {"type": "active_tab_is", "count": 0}
+      ],
+      "success_text": "You opened a tab and walked the tab list with gT."
+    }
+  },
+  {
+    "id": "tabs-close",
+    "module_id": "tabs",
+    "title": "Close A Tab",
+    "goal": "Open a tab with `:tabnew`, then close it with `:tabclose`.",
+    "explanation": "`:tabclose` (or `:tabc`) drops the current tab and returns you to its neighbor.",
+    "hints": ["Use :tabnew to open the second tab.", "Then :tabclose to drop it."],
+    "skills": ["tabs.new", "tabs.close"],
+    "commands_learned": [":tabnew", ":tabclose"],
+    "canonical_solutions": [":tabnew Enter :tabclose Enter"],
+    "focus_tokens": [":tabnew", ":tabclose"],
+    "rule": "Open a tab when you need a side-channel layout; close it when the work is done.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "tab_count_is", "count": 1},
+        {"type": "active_tab_is", "count": 0}
+      ],
+      "success_text": "You opened and then closed a tab page cleanly."
+    }
+  },
+  {
+    "id": "windows-move-ctrlw",
+    "module_id": "windowsmove",
+    "title": "Reorder Windows With Ctrl-W",
+    "goal": "Open a `:split`, then move the active window to the end of the list with `<C-w>L`.",
+    "explanation": "`<C-w>H/J/K/L` rearrange splits. In real Vim they shift orientation; the trainer reorders the window list so layout-management lessons feel coherent.",
+    "hints": [
+      "Run :split to create a second window.",
+      "Press Ctrl-W then L to push the active window to the last slot."
+    ],
+    "skills": ["windows.split", "windows.move"],
+    "commands_learned": [":split", "<C-w>L"],
+    "canonical_solutions": [":split Enter ctrl+w L"],
+    "focus_tokens": [":split", "<C-w>L"],
+    "rule": "Layout reordering is a Ctrl-W command; sizes are a separate concern.",
+    "initial": {
+      "buffers": [{"name": "notes.txt", "lines": ["alpha", "beta"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "all_of",
+      "children": [
+        {"type": "window_count_is", "count": 2},
+        {"type": "active_window_is", "count": 1}
+      ],
+      "success_text": "You created a split and moved the active window to the end of the layout."
+    }
+  },
+  {
+    "id": "windows-only",
+    "module_id": "windowsmove",
+    "title": "Keep Only One Window",
+    "goal": "Open two splits, then collapse to a single window with `<C-w>o`.",
+    "explanation": "`<C-w>o` (`only-window`) drops every window except the active one. Useful when you've split too many times and want a fresh layout.",
+    "hints": [
+      "Run :split twice to make three windows.",
+      "Press Ctrl-W then o to keep only the current window."
+    ],
+    "skills": ["windows.only"],
+    "commands_learned": ["<C-w>o"],
+    "canonical_solutions": [":split Enter :split Enter ctrl+w o"],
+    "focus_tokens": ["<C-w>o"],
+    "rule": "When the layout gets noisy, <C-w>o resets it without losing the buffer.",
+    "initial": {
+      "buffers": [{"name": "notes.txt", "lines": ["alpha"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "window_count_is",
+      "count": 1,
+      "success_text": "You collapsed multiple windows down to one with <C-w>o."
+    }
+  },
+  {
+    "id": "format-reindent-line",
+    "module_id": "format",
+    "title": "Reindent A Single Line",
+    "goal": "Use `==` to align the misindented middle line to the surrounding indent.",
+    "explanation": "`==` reindents the current line. `=ip` reindents an inner paragraph. The trainer aligns every targeted line to the indent of the first non-empty line in range.",
+    "hints": ["Move down to the misindented middle line with j.", "Press == to reindent it."],
+    "skills": ["format.reindent.line"],
+    "commands_learned": ["=="],
+    "canonical_solutions": ["j=="],
+    "focus_tokens": ["=="],
+    "rule": "Use == when one line drifts out of column with its neighbors.",
+    "initial": {
+      "buffers": [
+        {"name": "code.go", "lines": [
+          "  alpha",
+          "      beta",
+          "  gamma"
+        ]}
+      ],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [
+        "  alpha",
+        "  beta",
+        "  gamma"
+      ],
+      "success_text": "You realigned a stray line to the surrounding indent with ==."
+    }
+  },
+  {
+    "id": "format-reindent-paragraph",
+    "module_id": "format",
+    "title": "Reindent An Inner Paragraph",
+    "goal": "Use `=ip` to reflow indentation across the paragraph.",
+    "explanation": "`=ip` runs the reindent operator over the inner-paragraph text object. Every line in the paragraph gets aligned to the first line's indent.",
+    "hints": ["The cursor starts inside the paragraph.", "Press =ip to reindent the whole paragraph at once."],
+    "skills": ["format.reindent.paragraph", "textobjects.paragraph"],
+    "commands_learned": ["=ip"],
+    "canonical_solutions": ["=ip"],
+    "focus_tokens": ["=ip"],
+    "rule": "Operator + text-object scales: =ip is to == what dap is to dd.",
+    "initial": {
+      "buffers": [
+        {"name": "code.go", "lines": [
+          "  alpha",
+          "        beta",
+          "    gamma",
+          "",
+          "skip me"
+        ]}
+      ],
+      "windows": [{"buffer": 0, "row": 1, "col": 4}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [
+        "  alpha",
+        "  beta",
+        "  gamma",
+        "",
+        "skip me"
+      ],
+      "success_text": "You reindented an entire paragraph in a single operator + text-object pair."
+    }
+  },
+  {
+    "id": "format-reflow-paragraph",
+    "module_id": "format",
+    "title": "Reflow A Paragraph To Textwidth",
+    "goal": "Set `:set textwidth=20`, then use `gqip` to reflow the paragraph.",
+    "explanation": "`gq` wraps text to `textwidth`. The default is 78; setting it tighter (here, 20) makes the wrap visible in a small lesson buffer.",
+    "hints": [
+      "Run :set textwidth=20 and press Enter.",
+      "Then press gqip to reflow the paragraph at the cursor."
+    ],
+    "skills": ["format.reflow", "options.textwidth"],
+    "commands_learned": [":set textwidth=20", "gqip"],
+    "canonical_solutions": [":set textwidth=20 Enter gqip"],
+    "focus_tokens": [":set textwidth=20", "gqip"],
+    "rule": "Set textwidth, then let gq do the wrapping; manual <CR> insertion is rarely the right move.",
+    "initial": {
+      "buffers": [
+        {"name": "doc.md", "lines": [
+          "alpha beta gamma delta epsilon zeta eta theta"
+        ]}
+      ],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": [
+        "alpha beta gamma",
+        "delta epsilon zeta",
+        "eta theta"
+      ],
+      "success_text": "You set textwidth and let gqip wrap the paragraph for you."
+    }
+  }
+]

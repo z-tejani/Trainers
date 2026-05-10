@@ -1,0 +1,434 @@
+[
+  {
+    "id": "power-increment",
+    "module_id": "powermoves",
+    "title": "Increment And Decrement A Number",
+    "goal": "Use `<C-a>` to bump the number on this line from 41 to 42.",
+    "explanation": "<C-a> increments the number under (or right of) the cursor; <C-x> decrements. Counts compose: 5<C-a> adds five.",
+    "hints": ["Press <C-a> once."],
+    "skills": ["power.increment"],
+    "commands_learned": ["<C-a>"],
+    "canonical_solutions": ["ctrl+a"],
+    "focus_tokens": ["<C-a>"],
+    "rule": "<C-a>/<C-x> turn arithmetic into a single keystroke.",
+    "initial": {
+      "buffers": [{"name": "score.txt", "lines": ["score = 41"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["score = 42"],
+      "success_text": "You bumped a number with <C-a> instead of retyping it."
+    }
+  },
+  {
+    "id": "power-decrement",
+    "module_id": "powermoves",
+    "title": "Decrement Via <C-x>",
+    "goal": "Use `<C-x>` to drop the number from 100 to 99.",
+    "explanation": "<C-x> is the mirror of <C-a>. Like all counting motions, it accepts a count: 10<C-x> subtracts ten.",
+    "hints": ["Press <C-x> once."],
+    "skills": ["power.decrement"],
+    "commands_learned": ["<C-x>"],
+    "canonical_solutions": ["ctrl+x"],
+    "focus_tokens": ["<C-x>"],
+    "rule": "<C-x> mirrors <C-a>; both honor counts.",
+    "initial": {
+      "buffers": [{"name": "limit.txt", "lines": ["limit: 100"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["limit: 99"],
+      "success_text": "You decremented a number with <C-x>."
+    }
+  },
+  {
+    "id": "power-join-J",
+    "module_id": "powermoves",
+    "title": "Join Lines With J",
+    "goal": "Use `J` to merge `hello` and `world` onto one line, separated by a space.",
+    "explanation": "J joins the next line to the current one with a single space. gJ does the same without the separator.",
+    "hints": ["Press J on the first line."],
+    "skills": ["power.join"],
+    "commands_learned": ["J"],
+    "canonical_solutions": ["J"],
+    "focus_tokens": ["J"],
+    "rule": "J = join with space; gJ = join raw.",
+    "initial": {
+      "buffers": [{"name": "phrase.txt", "lines": ["hello", "world"]}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["hello world"],
+      "success_text": "You joined two lines with a single keystroke."
+    }
+  },
+  {
+    "id": "power-case-toggle",
+    "module_id": "powermoves",
+    "title": "Toggle Case",
+    "goal": "Place the cursor on `h` and press `~` to flip it to `H`.",
+    "explanation": "~ toggles the case of the character under the cursor and advances. g~iw toggles a whole word.",
+    "hints": ["Press ~ once on the lowercase h."],
+    "skills": ["power.case"],
+    "commands_learned": ["~"],
+    "canonical_solutions": ["~"],
+    "focus_tokens": ["~"],
+    "rule": "~ for one char, g~iw for a word, g~~ for a line.",
+    "initial": {
+      "buffers": [{"name": "scratch.txt", "lines": ["hi"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["Hi"],
+      "success_text": "You flipped a character's case with ~."
+    }
+  },
+  {
+    "id": "power-uppercase-word",
+    "module_id": "powermoves",
+    "title": "Uppercase A Word",
+    "goal": "Use `gUiw` to uppercase `hello` in place.",
+    "explanation": "gU is the uppercase operator. With iw, it transforms the inner word; with iw replaced by ip, it would transform a paragraph.",
+    "hints": ["Place the cursor on hello.", "Press gUiw."],
+    "skills": ["power.case", "textobjects.iw"],
+    "commands_learned": ["gUiw"],
+    "canonical_solutions": ["gUiw"],
+    "focus_tokens": ["gUiw"],
+    "rule": "Case operators are full operators; combine with any text-object.",
+    "initial": {
+      "buffers": [{"name": "shout.txt", "lines": ["hello world"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["HELLO world"],
+      "success_text": "You uppercased an inner word in one operator + text-object."
+    }
+  },
+  {
+    "id": "power-rot13-line",
+    "module_id": "powermoves",
+    "title": "ROT13 The Line",
+    "goal": "Use `g??` to rot13 the current line.",
+    "explanation": "g? is the rot13 operator. The duplicate form g?? operates on the current line. Mostly a curiosity, occasionally handy.",
+    "hints": ["Press g?? on the line."],
+    "skills": ["power.rot13"],
+    "commands_learned": ["g??"],
+    "canonical_solutions": ["g??"],
+    "focus_tokens": ["g??"],
+    "rule": "Every Vim user should know it exists. Run g?? once for the trivia.",
+    "initial": {
+      "buffers": [{"name": "secret.txt", "lines": ["hello"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "buffer_equals",
+      "buffer": ["uryyb"],
+      "success_text": "You rot13'd a line. Your team will think you're a wizard."
+    }
+  },
+  {
+    "id": "power-resume-insert",
+    "module_id": "powermoves",
+    "title": "Resume Insert With gi",
+    "goal": "Press `gi` to drop straight back into Insert mode at the position you last left it.",
+    "explanation": "gi remembers where Insert mode last ended (the auto-mark '^) and resumes there. Saves the i / a dance after a quick navigation aside.",
+    "hints": ["You start in Normal at row 1.", "Press gi — Vim drops back into Insert mode at the position where Insert last ended."],
+    "skills": ["power.gi", "marks.auto"],
+    "commands_learned": ["gi"],
+    "canonical_solutions": ["gi"],
+    "focus_tokens": ["gi"],
+    "rule": "gi is `'^` + i in one keystroke.",
+    "initial": {
+      "buffers": [{"name": "draft.txt", "lines": ["abc", "xyz"]}],
+      "windows": [{"buffer": 0, "row": 1, "col": 0}],
+      "starting_mode": "normal"
+    },
+    "check": {
+      "type": "mode_is",
+      "mode": "insert",
+      "success_text": "gi dropped you back into Insert mode in one keystroke."
+    }
+  },
+  {
+    "id": "autocmd-register",
+    "module_id": "autocmds",
+    "title": "Register An Autocommand",
+    "goal": "Run `:autocmd BufWritePre * %s/\\s\\+$//e` so trailing whitespace gets stripped on save.",
+    "explanation": ":autocmd Event Pattern Cmd binds Cmd to fire on Event for files matching Pattern. The trainer stores it; real Vim wires the event system.",
+    "hints": ["Run the autocmd line and press Enter."],
+    "skills": ["autocmd.register"],
+    "commands_learned": [":autocmd"],
+    "canonical_solutions": [":autocmd BufWritePre * %s/\\s\\+$//e Enter"],
+    "focus_tokens": [":autocmd BufWritePre"],
+    "rule": "autocmd is the bridge between events and edits; learn the syntax even if your config never grows beyond a handful.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" config"]}]
+    },
+    "check": {
+      "type": "autocmd_count_is",
+      "count": 1,
+      "success_text": "You registered an autocommand. Save events would now strip trailing whitespace."
+    }
+  },
+  {
+    "id": "autocmd-augroup",
+    "module_id": "autocmds",
+    "title": "Use An Augroup",
+    "goal": "Wrap a `BufRead *.go` autocmd in an augroup with `:augroup gocfg` ... `:augroup END`.",
+    "explanation": "augroup names a logical bucket so you can clear it cleanly with `:autocmd!` inside the same group. It's how plugin authors avoid stacking duplicate autocmds across reloads.",
+    "hints": [
+      "Run :augroup gocfg.",
+      "Run :autocmd BufRead *.go echo \"go!\".",
+      "Run :augroup END."
+    ],
+    "skills": ["autocmd.augroup"],
+    "commands_learned": [":augroup", ":autocmd"],
+    "canonical_solutions": [":augroup gocfg Enter :autocmd BufRead *.go echo \"go!\" Enter :augroup END Enter"],
+    "focus_tokens": [":augroup gocfg", ":autocmd BufRead *.go", ":augroup END"],
+    "rule": "Always group your autocmds; you'll thank yourself when reloading config.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" config"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":augroup gocfg", ":augroup END"],
+      "success_text": "You scoped an autocmd inside a named augroup."
+    }
+  },
+  {
+    "id": "session-mksession",
+    "module_id": "sessions",
+    "title": "Save A Session",
+    "goal": "Use `:mksession ~/work.vim` to capture the layout.",
+    "explanation": ":mksession serializes the current windows / buffers / options to a file you can re-source later with :source.",
+    "hints": ["Run :mksession ~/work.vim and Enter."],
+    "skills": ["session.mksession"],
+    "commands_learned": [":mksession"],
+    "canonical_solutions": [":mksession ~/work.vim Enter"],
+    "focus_tokens": [":mksession"],
+    "rule": "Sessions are layout snapshots; they make multi-window setups disposable.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main"]}]
+    },
+    "check": {
+      "type": "session_count_is",
+      "count": 1,
+      "success_text": "You saved a session — you can :source it later to recover the layout."
+    }
+  },
+  {
+    "id": "session-mkview",
+    "module_id": "sessions",
+    "title": "Save A View",
+    "goal": "Use `:mkview` to capture per-file fold + cursor state.",
+    "explanation": ":mkview persists this file's view (folds, cursor) so :loadview restores it. Pair with autocmds (BufWritePost / BufRead) to make it automatic.",
+    "hints": ["Run :mkview and Enter."],
+    "skills": ["session.mkview"],
+    "commands_learned": [":mkview"],
+    "canonical_solutions": [":mkview Enter"],
+    "focus_tokens": [":mkview"],
+    "rule": "mkview is per-file; mksession is for the whole layout.",
+    "initial": {
+      "buffers": [{"name": "doc.md", "lines": ["alpha"]}]
+    },
+    "check": {
+      "type": "view_count_is",
+      "count": 1,
+      "success_text": "You saved a view. :loadview will bring back folds and cursor next time."
+    }
+  },
+  {
+    "id": "ui-statusline",
+    "module_id": "uisurfaces",
+    "title": "Customize The Statusline",
+    "goal": "Set `:set statusline=%f` so the bottom bar shows the current filename.",
+    "explanation": "statusline is a format string. %f is the file path; %m is the modified flag; %y is filetype; %l/%L is line/total. Plugins like lualine ship richer renderers.",
+    "hints": ["Run :set statusline=%f and Enter."],
+    "skills": ["ui.statusline"],
+    "commands_learned": [":set statusline=%f"],
+    "canonical_solutions": [":set statusline=%f Enter"],
+    "focus_tokens": [":set statusline=%f"],
+    "rule": "The statusline is a format string; keep it readable, not a metric soup.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main"]}]
+    },
+    "check": {
+      "type": "statusline_is",
+      "value": "%f",
+      "success_text": "Your statusline format is set."
+    }
+  },
+  {
+    "id": "ui-conceal",
+    "module_id": "uisurfaces",
+    "title": "Conceal Markup",
+    "goal": "Set `:set conceallevel=2` so concealed text (Markdown, LaTeX) renders.",
+    "explanation": "conceallevel controls how the editor renders 'conceal' regions defined by syntax files. 0 disables; 2 shows replacement char if defined; 3 hides entirely.",
+    "hints": ["Run :set conceallevel=2 and Enter."],
+    "skills": ["ui.conceal"],
+    "commands_learned": [":set conceallevel=2"],
+    "canonical_solutions": [":set conceallevel=2 Enter"],
+    "focus_tokens": [":set conceallevel=2"],
+    "rule": "Markdown and LaTeX users live with conceallevel=2 or 3.",
+    "initial": {
+      "buffers": [{"name": "notes.md", "lines": ["**bold**"]}]
+    },
+    "check": {
+      "type": "conceal_level_is",
+      "count": 2,
+      "success_text": "Conceal is on; syntax-defined hidden regions will render compactly."
+    }
+  },
+  {
+    "id": "ui-sign-place",
+    "module_id": "uisurfaces",
+    "title": "Place A Sign",
+    "goal": "Run `:sign place name=Bookmark line=2 buffer=1` to drop a sign.",
+    "explanation": "Signs are gutter glyphs that linters, debuggers, and version-control plugins use to mark lines. Define them with :sign define, then place them with :sign place.",
+    "hints": ["Run the :sign place command and Enter."],
+    "skills": ["ui.signs"],
+    "commands_learned": [":sign place"],
+    "canonical_solutions": [":sign place name=Bookmark line=2 buffer=1 Enter"],
+    "focus_tokens": [":sign place"],
+    "rule": "Signs are how every gutter plugin you've ever used surfaces information.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main", "func main() {}"]}]
+    },
+    "check": {
+      "type": "sign_count_is",
+      "count": 1,
+      "success_text": "You placed a sign — gutter plugins use this exact API."
+    }
+  },
+  {
+    "id": "help-cmdline-history",
+    "module_id": "helpcmdline",
+    "title": "Open The Cmdline History",
+    "goal": "Run `:set number`, then press `q:` to open your cmdline history as an editable buffer.",
+    "explanation": "q: opens command history as a buffer you can scroll, edit, and re-execute. q/ does the same for search history. Underused; massively powerful.",
+    "hints": ["Run :set number and Enter.", "From Normal mode press q:."],
+    "skills": ["help.cmdline_history"],
+    "commands_learned": ["q:"],
+    "canonical_solutions": [":set number Enter q:"],
+    "focus_tokens": ["q:"],
+    "rule": "q: and q/ turn ephemeral history into editable text.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main"]}]
+    },
+    "check": {
+      "type": "active_buffer_name_is",
+      "buffer_name": "history://cmdline",
+      "success_text": "You opened the cmdline-history buffer."
+    }
+  },
+  {
+    "id": "help-helpgrep",
+    "module_id": "helpcmdline",
+    "title": "Search Help With :helpgrep",
+    "goal": "Run `:helpgrep autocmd` to fill quickfix with help-tag matches.",
+    "explanation": ":helpgrep PATTERN scans the help tags and dumps results into quickfix — your first stop when `:help foo` lands on the wrong page.",
+    "hints": ["Run :helpgrep autocmd and Enter."],
+    "skills": ["help.helpgrep"],
+    "commands_learned": [":helpgrep"],
+    "canonical_solutions": [":helpgrep autocmd Enter"],
+    "focus_tokens": [":helpgrep"],
+    "rule": ":helpgrep + :cnext beats clicking through ten :help pages.",
+    "initial": {
+      "buffers": [{"name": ".vimrc", "lines": ["\" config"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":helpgrep autocmd"],
+      "success_text": "You searched help via :helpgrep — quickfix has the hits."
+    }
+  },
+  {
+    "id": "help-tag-jump",
+    "module_id": "helpcmdline",
+    "title": "Jump To A Tag With <C-]>",
+    "goal": "Move onto `deploy` and press `<C-]>` to jump to its definition.",
+    "explanation": "<C-]> follows the tag under the cursor — in real Vim, that means a tags-file lookup. The trainer reuses the gd heuristic so you can practice the keystroke.",
+    "hints": ["Place the cursor on deploy.", "Press <C-]>."],
+    "skills": ["help.tag"],
+    "commands_learned": ["<C-]>"],
+    "canonical_solutions": ["ctrl+]"],
+    "focus_tokens": ["<C-]>"],
+    "rule": "<C-]> follows; <C-T> goes back. The two keystrokes are 90% of tag navigation.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["deploy()", "func deploy() {}"]}],
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
+    },
+    "check": {
+      "type": "cursor_row_is",
+      "row": 1,
+      "success_text": "You jumped via tag — and <C-T> would pop you back."
+    }
+  },
+  {
+    "id": "ecosystem-treesitter",
+    "module_id": "ecosystem-deep",
+    "title": "Toggle Treesitter Playground",
+    "goal": "Run `:TSPlaygroundToggle` to open the syntax tree explorer.",
+    "explanation": "Treesitter parses code into a syntax tree the editor can highlight, fold, and select against. The playground shows the tree live — invaluable when authoring queries.",
+    "hints": ["Run :TSPlaygroundToggle and Enter."],
+    "skills": ["ecosystem.treesitter"],
+    "commands_learned": [":TSPlaygroundToggle"],
+    "canonical_solutions": [":TSPlaygroundToggle Enter"],
+    "focus_tokens": [":TSPlaygroundToggle"],
+    "rule": "When highlighting feels off, the playground is the first place to look.",
+    "initial": {
+      "buffers": [{"name": "init.lua", "lines": ["-- treesitter"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":TSPlaygroundToggle"],
+      "success_text": "You toggled the Treesitter playground."
+    }
+  },
+  {
+    "id": "ecosystem-dap",
+    "module_id": "ecosystem-deep",
+    "title": "Start A Debug Session",
+    "goal": "Run `:DapToggleBreakpoint` then `:DapContinue` to drive a debug adapter.",
+    "explanation": "nvim-dap exposes Debug Adapter Protocol clients via these `:Dap*` commands. The trainer doesn't ship a real DAP backend — these are vocabulary lessons.",
+    "hints": ["Run :DapToggleBreakpoint.", "Run :DapContinue."],
+    "skills": ["ecosystem.dap"],
+    "commands_learned": [":DapToggleBreakpoint", ":DapContinue"],
+    "canonical_solutions": [":DapToggleBreakpoint Enter :DapContinue Enter"],
+    "focus_tokens": [":DapToggleBreakpoint", ":DapContinue"],
+    "rule": "Breakpoint + continue is the loop you'll spend the most time in.",
+    "initial": {
+      "buffers": [{"name": "main.go", "lines": ["package main"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":DapToggleBreakpoint", ":DapContinue"],
+      "success_text": "You drove the DAP loop — breakpoint + continue."
+    }
+  },
+  {
+    "id": "ecosystem-snippets",
+    "module_id": "ecosystem-deep",
+    "title": "Browse Available Snippets",
+    "goal": "Run `:LuaSnipListAvailable` to see the snippets registered for the current filetype.",
+    "explanation": "LuaSnip is the most popular snippet engine for Neovim. Its `:LuaSnipListAvailable` command lists what would expand at the cursor.",
+    "hints": ["Run :LuaSnipListAvailable and Enter."],
+    "skills": ["ecosystem.snippets"],
+    "commands_learned": [":LuaSnipListAvailable"],
+    "canonical_solutions": [":LuaSnipListAvailable Enter"],
+    "focus_tokens": [":LuaSnipListAvailable"],
+    "rule": "When `<Tab>` won't expand, list available — your filetype probably has no snippets registered.",
+    "initial": {
+      "buffers": [{"name": "init.lua", "lines": ["-- snippets"]}]
+    },
+    "check": {
+      "type": "command_includes",
+      "commands": [":LuaSnipListAvailable"],
+      "success_text": "You queried the snippet engine — useful when expansions feel broken."
+    }
+  }
+]
