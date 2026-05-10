@@ -46,6 +46,13 @@ type SkillProgress struct {
 type Settings struct {
 	ShowHints bool `json:"show_hints"`
 	Debug     bool `json:"debug"`
+	// NonStrictMode loosens lesson evaluation: in non-strict mode the
+	// check accepts ANY key sequence that reaches the goal state, and
+	// "did the user run this exact command" checks (command_includes)
+	// are relaxed to "did the user run any one of these commands".
+	// Useful when the learner wants to solve a lesson their own way
+	// without being held to the canonical key sequence.
+	NonStrictMode bool `json:"non_strict_mode,omitempty"`
 	// P3 expansion — UI-side tunables. The trainer doesn't ship a
 	// theme picker engine; these are advisory flags surfaced in the
 	// Settings screen so a learner can opt into accessibility-friendly

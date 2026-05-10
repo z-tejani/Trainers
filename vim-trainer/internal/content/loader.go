@@ -180,6 +180,17 @@ func (lf lessonFile) toLesson() (Lesson, error) {
 	if err != nil {
 		return Lesson{}, fmt.Errorf("check: %w", err)
 	}
+	// Relaxed pass: same spec, but with the relaxation flag set so
+	// command_includes becomes "any one of these commands" (or true if
+	// the list is empty). Authors don't need to write a separate spec.
+	relaxedSpec := relaxCheckSpec(lf.Check)
+	relaxedCheck, err := buildCheck(lf.ID, relaxedSpec)
+	if err != nil {
+		// If we couldn't build a relaxed version, fall back to the
+		// strict one — the non-strict toggle then becomes a no-op for
+		// this lesson rather than blocking the user.
+		relaxedCheck = nil
+	}
 	timeTarget := time.Duration(lf.TimeTargetMS) * time.Millisecond
 	return Lesson{
 		ID:                 lf.ID,
@@ -197,9 +208,39 @@ func (lf lessonFile) toLesson() (Lesson, error) {
 		CommonMistakes:     lf.CommonMistakes,
 		Initial:            scenario,
 		Check:              check,
+		RelaxedCheck:       relaxedCheck,
 		OptimalKeys:        lf.OptimalKeys,
 		TimeTarget:         timeTarget,
 	}, nil
+}
+
+// relaxCheckSpec returns a transformed CheckSpec where command_includes
+// nodes are loosened from "all of these specific commands" to "any one
+// of these commands." This keeps non-strict mode honest (the learner
+// still has to do *something*) while letting them pick which path to
+// take rather than walking the canonical step-by-step.
+//
+//   - Standalone command_includes → command_any (any one match counts).
+//   - command_includes inside all_of → command_any so the surrounding
+//     state-based checks still gate completion.
+//   - Other check types pass through unchanged.
+func relaxCheckSpec(spec CheckSpec) CheckSpec {
+	switch spec.Type {
+	case "command_includes":
+		return CheckSpec{
+			Type:        "command_any",
+			Commands:    append([]string{}, spec.Commands...),
+			SuccessText: spec.SuccessText,
+		}
+	case "all_of":
+		relaxed := CheckSpec{Type: "all_of", SuccessText: spec.SuccessText}
+		for _, child := range spec.Children {
+			relaxed.Children = append(relaxed.Children, relaxCheckSpec(child))
+		}
+		return relaxed
+	default:
+		return spec
+	}
 }
 
 func (sf scenarioFile) toScenario() (engine.Scenario, error) {
@@ -248,6 +289,12 @@ func buildCheck(lessonID string, spec CheckSpec) (func(engine.State) (bool, stri
 			return nil, fmt.Errorf("custom check requested but no closure registered for %q", lessonID)
 		}
 		return fn, nil
+	case "always_true":
+		// Used by the non-strict relaxer to neutralize a check while
+		// keeping the surrounding all_of structure valid. Lessons
+		// shouldn't author this directly.
+		successText := spec.SuccessText
+		return func(_ engine.State) (bool, string) { return true, successText }, nil
 	case "buffer_equals":
 		want := append([]string{}, spec.Buffer...)
 		mode := spec.Mode
@@ -645,6 +692,25 @@ func buildCheck(lessonID string, spec CheckSpec) (func(engine.State) (bool, stri
 				}
 			}
 			return true, successText
+		}, nil
+	case "command_any":
+		// Non-strict relaxation of command_includes: any one of the
+		// listed commands in history satisfies the check. If the list
+		// is empty, the check always passes.
+		want := append([]string{}, spec.Commands...)
+		successText := spec.SuccessText
+		return func(state engine.State) (bool, string) {
+			if len(want) == 0 {
+				return true, successText
+			}
+			for _, h := range state.CommandHistory {
+				for _, token := range want {
+					if h == token {
+						return true, successText
+					}
+				}
+			}
+			return false, ""
 		}, nil
 	case "option_is":
 		opt := strings.ToLower(spec.Option)

@@ -34,6 +34,11 @@ type Lesson struct {
 	CommonMistakes     map[string]string
 	Initial            engine.Scenario
 	Check              func(engine.State) (bool, string)
+	// RelaxedCheck is the non-strict-mode evaluator. When the user has
+	// `Settings.NonStrictMode = true`, this replaces Check. nil means
+	// "no relaxation distinct from the strict check" — i.e., the
+	// lesson is already permissive (state-based), so strict == relaxed.
+	RelaxedCheck func(engine.State) (bool, string)
 	// OptimalKeys is the par keystroke count for the lesson. When > 0 the
 	// summary screen reports efficiency relative to this target. When 0 the
 	// lesson is treated as "no efficiency target" and only completion is
@@ -180,6 +185,20 @@ func (c *Catalog) NextLessonID(currentID string) string {
 		return ""
 	}
 	return c.lessons[idx+1].ID
+}
+
+// EvaluateWith runs the lesson check, picking the relaxed evaluator
+// when the caller passes nonStrict=true and the lesson has one.
+// Call this from the UI; plain Evaluate stays strict.
+func (c *Catalog) EvaluateWith(lesson Lesson, state engine.State, nonStrict bool) Feedback {
+	if nonStrict && lesson.RelaxedCheck != nil {
+		// Swap in the relaxed check for safeCheck to invoke. Keep the
+		// public Evaluate API otherwise identical.
+		clone := lesson
+		clone.Check = lesson.RelaxedCheck
+		return c.Evaluate(clone, state)
+	}
+	return c.Evaluate(lesson, state)
 }
 
 func (c *Catalog) Evaluate(lesson Lesson, state engine.State) Feedback {

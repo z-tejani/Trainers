@@ -3464,6 +3464,42 @@ func (e *Editor) wordBounds(includeSpaces bool) (int, int, bool) {
 	return start, end, true
 }
 
+// innerWordRange returns the [start, end) rune-indexed bounds of the
+// whole word containing the cursor — expanding BOTH directions, unlike
+// wordBounds() which only scans forward. Used by the `iw`/`aw` text
+// objects so `diw` placed mid-word still deletes the entire word.
+func (e *Editor) innerWordRange() (int, int, bool) {
+	runes := e.lineRunes()
+	cur := e.currentCursor()
+	if len(runes) == 0 {
+		return 0, 0, false
+	}
+	col := cur.Col
+	if col >= len(runes) {
+		col = len(runes) - 1
+	}
+	if !isWordRune(runes[col]) {
+		// Not on a word — skip forward to the next one.
+		i := col
+		for i < len(runes) && !isWordRune(runes[i]) {
+			i++
+		}
+		if i >= len(runes) {
+			return 0, 0, false
+		}
+		col = i
+	}
+	start := col
+	for start > 0 && isWordRune(runes[start-1]) {
+		start--
+	}
+	end := col
+	for end < len(runes) && isWordRune(runes[end]) {
+		end++
+	}
+	return start, end, true
+}
+
 func (e *Editor) wordUnderCursor() string {
 	runes := e.lineRunes()
 	cur := e.currentCursor()
@@ -4213,14 +4249,28 @@ func (e *Editor) textObjectRange(objType rune, target rune) (startRow, startCol,
 	includeAround := objType == 'a'
 	switch target {
 	case 'w':
-		runes := e.lineRunes()
-		start, end, ok := e.wordBounds(includeAround)
+		// Text-object `iw` / `aw` must span the WHOLE word containing
+		// the cursor. The shared wordBounds() used by dw/cw/yw only
+		// scans forward from the cursor, which is correct for those
+		// operators but wrong for text objects — placing the cursor
+		// mid-word and pressing `diw` would otherwise leave the
+		// leading letters intact.
+		start, end, ok := e.innerWordRange()
 		if !ok {
 			return 0, 0, 0, 0, false, false
 		}
+		runes := e.lineRunes()
 		if includeAround {
-			for start > 0 && unicode.IsSpace(runes[start-1]) {
-				start--
+			// `aw`: extend forward over trailing whitespace; if none
+			// (e.g., end of line), eat the LEADING whitespace instead.
+			savedEnd := end
+			for end < len(runes) && unicode.IsSpace(runes[end]) {
+				end++
+			}
+			if end == savedEnd {
+				for start > 0 && unicode.IsSpace(runes[start-1]) {
+					start--
+				}
 			}
 		}
 		row := e.currentCursor().Row

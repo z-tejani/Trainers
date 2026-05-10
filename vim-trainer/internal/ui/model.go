@@ -450,7 +450,7 @@ func (a *App) updateLesson(msg tea.KeyMsg) {
 	// confirms to the learner that *something* happened.
 	if key == "f4" || key == "ctrl+s" {
 		state := a.session.Editor.State()
-		feedback := a.catalog.Evaluate(a.session.Lesson, state)
+		feedback := a.catalog.EvaluateWith(a.session.Lesson, state, a.profile.Settings.NonStrictMode)
 		a.session.Feedback = feedback
 		if feedback.Completed {
 			a.completeLesson()
@@ -467,7 +467,7 @@ func (a *App) updateLesson(msg tea.KeyMsg) {
 		a.quit = true
 		return
 	}
-	feedback := a.catalog.Evaluate(a.session.Lesson, state)
+	feedback := a.catalog.EvaluateWith(a.session.Lesson, state, a.profile.Settings.NonStrictMode)
 	a.session.Feedback = feedback
 	if result.Error != "" {
 		if result.Token != "" {
@@ -529,7 +529,7 @@ func (a *App) updateStats(msg tea.KeyMsg) {
 }
 
 func (a *App) updateSettings(msg tea.KeyMsg) {
-	const numSettings = 6 // ShowHints, Debug, Theme, ColorblindSafe, ReducedMotion, LargerCursor
+	const numSettings = 7 // ShowHints, NonStrict, Debug, Theme, Colorblind, ReducedMotion, LargerCursor
 	switch msg.String() {
 	case "esc":
 		a.route = routeHome
@@ -546,9 +546,10 @@ func (a *App) updateSettings(msg tea.KeyMsg) {
 		case 0:
 			a.profile.Settings.ShowHints = !a.profile.Settings.ShowHints
 		case 1:
-			a.profile.Settings.Debug = !a.profile.Settings.Debug
+			a.profile.Settings.NonStrictMode = !a.profile.Settings.NonStrictMode
 		case 2:
-			// Cycle: default → high-contrast → monochrome → default
+			a.profile.Settings.Debug = !a.profile.Settings.Debug
+		case 3:
 			switch a.profile.Settings.Theme {
 			case "", "default":
 				a.profile.Settings.Theme = "high-contrast"
@@ -557,11 +558,11 @@ func (a *App) updateSettings(msg tea.KeyMsg) {
 			default:
 				a.profile.Settings.Theme = "default"
 			}
-		case 3:
-			a.profile.Settings.ColorblindSafe = !a.profile.Settings.ColorblindSafe
 		case 4:
-			a.profile.Settings.ReducedMotion = !a.profile.Settings.ReducedMotion
+			a.profile.Settings.ColorblindSafe = !a.profile.Settings.ColorblindSafe
 		case 5:
+			a.profile.Settings.ReducedMotion = !a.profile.Settings.ReducedMotion
+		case 6:
 			a.profile.Settings.LargerCursor = !a.profile.Settings.LargerCursor
 		}
 		_ = a.store.Save(a.profile)
@@ -616,7 +617,7 @@ func (a *App) startSingleLesson(mode, lessonID string, queue []string, index int
 		QueueIndex:  index,
 		Editor:      engine.NewEditor(lesson.Initial),
 		StartedAt:   time.Now(),
-		Feedback:    a.catalog.Evaluate(lesson, engine.NewEditor(lesson.Initial).State()),
+		Feedback:    a.catalog.EvaluateWith(lesson, engine.NewEditor(lesson.Initial).State(), a.profile.Settings.NonStrictMode),
 		ModuleTitle: module.Title,
 	}
 	a.showReplay = false
@@ -1044,6 +1045,12 @@ func (a *App) viewLesson() string {
 	if a.profile.Settings.Debug {
 		// Engine owns the debug rendering — see Editor.DebugSummary.
 		lines = append(lines, dim("Debug: "+a.session.Editor.DebugSummary()))
+		// Spoiler line: surface the lesson's expected answer (shortest
+		// canonical solution) so the debug session can sanity-check the
+		// scenario without context-switching back to the source.
+		if expected := expectedAnswer(a.session.Lesson); expected != "" {
+			lines = append(lines, dim("Expected: "+expected))
+		}
 	}
 	if a.showCheatsheet {
 		lines = append(lines, "")
@@ -1057,7 +1064,11 @@ func (a *App) viewLesson() string {
 	if !a.profile.Settings.ShowHints {
 		hintState = "off"
 	}
-	lines = append(lines, a.footer(fmt.Sprintf("%s  ·  F4 submit, F2 home, F3 cheatsheet, F5 restart, F6 replay, ?/F1 hints (%s), :q quit.", keyInfo, hintState)))
+	mode := "strict"
+	if a.profile.Settings.NonStrictMode {
+		mode = cyan("non-strict")
+	}
+	lines = append(lines, a.footer(fmt.Sprintf("%s  ·  %s  ·  F4 submit, F2 home, F3 cheatsheet, F5 restart, F6 replay, ?/F1 hints (%s), :q quit.", keyInfo, mode, hintState)))
 	if a.status != "" {
 		lines = append(lines, yellow(a.status))
 	}
@@ -1329,6 +1340,7 @@ func (a *App) viewSettings() string {
 	}
 	items := []string{
 		fmt.Sprintf("Show hints: %t", a.profile.Settings.ShowHints),
+		fmt.Sprintf("Non-strict mode: %t  (accept any key sequence that reaches the goal)", a.profile.Settings.NonStrictMode),
 		fmt.Sprintf("Debug overlay: %t", a.profile.Settings.Debug),
 		fmt.Sprintf("Theme: %s", theme),
 		fmt.Sprintf("Colorblind-safe palette: %t", a.profile.Settings.ColorblindSafe),
@@ -1781,6 +1793,23 @@ func visibleRange(total, cursor, maxVisible int) (int, int) {
 		start = 0
 	}
 	return start, end
+}
+
+// expectedAnswer returns the shortest canonical solution for a lesson —
+// the same one parKeysFromCanonical scores against — so the debug
+// overlay can surface "here's the intended chord." Returns "" when the
+// lesson has no canonical solutions on file.
+func expectedAnswer(lesson content.Lesson) string {
+	if len(lesson.CanonicalSolutions) == 0 {
+		return ""
+	}
+	best := lesson.CanonicalSolutions[0]
+	for _, sol := range lesson.CanonicalSolutions[1:] {
+		if len(sol) < len(best) {
+			best = sol
+		}
+	}
+	return best
 }
 
 func tokenOrDash(token string) string {

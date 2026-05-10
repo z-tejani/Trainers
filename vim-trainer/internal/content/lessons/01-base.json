@@ -3,20 +3,21 @@
     "id": "onboarding-insert",
     "module_id": "onboarding",
     "title": "Modal Editing Starts Here",
-    "goal": "Press i, type vim, then press Esc so the line becomes `name = vim`.",
-    "explanation": "Vim starts in Normal mode. You only enter Insert mode when you intend to type text.",
-    "hints": ["Use i to enter Insert mode.", "Type vim.", "Press Esc to return to Normal mode."],
-    "skills": ["modes.normal", "modes.insert", "escape"],
-    "commands_learned": ["i", "Esc"],
-    "canonical_solutions": ["i vim Esc"],
-    "focus_tokens": ["i", "esc"],
-    "rule": "Normal mode is for commands; Insert mode is for typing text.",
+    "goal": "Press A to start appending at the end of the line, type vim, then press Esc so the line becomes `name = vim`.",
+    "explanation": "Vim starts in Normal mode. You only enter Insert mode when you intend to type text. `A` is the fastest way to jump to the end of the line and start inserting — perfect for completing a half-written value. (Lowercase `a` appends after the cursor; `i` would insert *before* it, so on this trailing-space line `A` is the right tool.)",
+    "hints": ["Press A — it jumps to the end of the line and enters Insert mode.", "Type vim.", "Press Esc to return to Normal mode."],
+    "skills": ["modes.normal", "modes.insert", "escape", "motions.lineend"],
+    "commands_learned": ["A", "Esc"],
+    "canonical_solutions": ["Avim Esc"],
+    "focus_tokens": ["A", "esc"],
+    "rule": "Normal mode is for commands; Insert mode is for typing text. Choose the right insert-entry verb (i, a, A, I, o, O) for the position you want.",
     "common_mistakes": {
-      "v": "You typed text while still in Normal mode. Press i first so Vim knows you want to insert text."
+      "v": "You typed text while still in Normal mode. Press A (or i / a / o) first so Vim knows you want to insert.",
+      "i": "i inserts *before* the cursor. The cursor here sits on the trailing space, so `i vim` would land between the `=` and the space. Use A to jump past the line end."
     },
     "initial": {
       "buffers": [{"name": "scratch.txt", "lines": ["name = "]}],
-      "windows": [{"buffer": 0, "row": 0, "col": 7}]
+      "windows": [{"buffer": 0, "row": 0, "col": 0}]
     },
     "check": {
       "type": "all_of",
@@ -24,7 +25,7 @@
         {"type": "buffer_equals", "buffer": ["name = vim"]},
         {"type": "mode_is", "mode": "normal"}
       ],
-      "success_text": "You switched into Insert mode, typed the text, and escaped back to Normal mode."
+      "success_text": "You jumped to the end of the line with A, typed the value, and escaped back to Normal mode."
     }
   },
   {
@@ -372,14 +373,14 @@
     "id": "textobjects-caw",
     "module_id": "textobjects",
     "title": "A Word Includes Space",
-    "goal": "Change beta to core with caw, type core, and press Esc so the line becomes `alpha core gamma`.",
-    "explanation": "aw includes surrounding space, which is useful when you want a clean replacement.",
-    "hints": ["Use caw on beta.", "Type core and press Esc."],
+    "goal": "Use `caw` on beta and type `core` + Esc — caw eats the trailing space, so the result is `alpha coregamma` (no space between core and gamma).",
+    "explanation": "`aw` is `around-word` — the word PLUS its trailing whitespace (or leading, at end-of-line). `caw` deletes that whole unit and drops you in Insert. Whatever you type replaces it verbatim; the eaten space does not come back. Use `ciw` if you want to preserve the surrounding spacing.",
+    "hints": ["Use caw on beta.", "Type core and press Esc.", "Notice caw consumed the trailing space — that's the point of `around` vs `inner`."],
     "skills": ["textobjects.aw", "textobjects.caw"],
     "commands_learned": ["aw", "caw"],
     "canonical_solutions": ["cawcore Esc"],
     "focus_tokens": ["caw"],
-    "rule": "Use aw when the replacement should cleanly absorb the surrounding spacing.",
+    "rule": "aw absorbs the surrounding whitespace. ciw preserves it. Pick deliberately.",
     "initial": {
       "buffers": [{"name": "phrase.txt", "lines": ["alpha beta gamma"]}],
       "windows": [{"buffer": 0, "row": 0, "col": 6}]
@@ -388,9 +389,9 @@
       "type": "all_of",
       "children": [
         {"type": "mode_is", "mode": "normal"},
-        {"type": "buffer_equals", "buffer": ["alpha core gamma"]}
+        {"type": "buffer_equals", "buffer": ["alpha coregamma"]}
       ],
-      "success_text": "caw replaced the word together with its surrounding spacing."
+      "success_text": "caw replaced beta and its trailing space — you can see the difference from `ciw` here."
     }
   },
   {
